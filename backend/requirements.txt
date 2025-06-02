@@ -1,0 +1,35 @@
+# Core FastAPI
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Your RAG Stack
+llama-index-core>=0.12.0,<0.13.0
+llama-index>=0.12.0,<0.13.0
+llama-index-multi-modal-llms-gemini>=0.5.0
+llama-index-vector-stores-chroma>=0.4.1
+llama-index-embeddings-huggingface>=0.5.4
+transformers>=4.41.0,<5.0.0
+sentence-transformers>=4.1.0
+google-generativeai>=0.8.5
+
+# Video Processing
+youtube-transcript-api>=0.6.1
+yt-dlp>=2023.11.16
+opencv-python>=4.8.1.78
+
+# Database & Storage
+sqlalchemy>=2.0.23
+alembic>=1.12.1
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+httpx>=0.25.2
+redis>=5.0.1  # For caching (optional)
+
+# Development
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+black>=23.11.0

@@ -1,0 +1,86 @@
+{
+  "video_id": "uDEeaT1tz3I",
+  "youtube_url": "https://www.youtube.com/watch?v=uDEeaT1tz3I",
+  "video_info": {
+    "video_path": "storage/uDEeaT1tz3I.mp4",
+    "title": "Zero Knowledge Proof Explained By Examples",
+    "duration": 246,
+    "video_id": "uDEeaT1tz3I"
+  },
+  "transcript_segments": 107,
+  "frames_extracted": 10,
+  "frame_descriptions": [
+    {
+      "timestamp": 0,
+      "timestamp_formatted": "00:00",
+      "description": "The frame you've provided is completely white with no discernible features, objects, or text. There are no visible people, activities, or settings due to the uniform color and lack of contrast or details.",
+      "frame_path": "storage/frame_0_0.jpg",
+      "frame_number": 0
+    },
+    {
+      "timestamp": 30,
+      "timestamp_formatted": "00:30",
+      "description": "The video frame features an informational illustration about zero-knowledge proofs (ZKP). At the top, there's text in bold black saying, \"ZERO-KNOWLEDGE PROOF (ZKP) CAN PROVE A FACT WITHOUT LEAKING ANY PRIVACY INFORMATION.\"\n\nBelow this text, there are two phrases. On the left, \"EMERGENCE OF ZKP\" is written in blue. On the right, \"PROTECT PRIVACY DATA\" is depicted in orange. Between these phrases, there is a blue arrow pointing from left to right, suggesting a progression or transition.\n\nBelow these elements, there is a visual representation of a hand in blue, palm facing up, holding a lock. The lock is black, with a blue keyhole in the center, symbolizing security and privacy.\n\nThe overall layout is minimalistic with a white background, emphasizing clarity and focus on the message conveyed about ZKPs and privacy.",
+      "frame_path": "storage/frame_1_24.jpg",
+      "frame_number": 1
+    },
+    {
+      "timestamp": 60,
+      "timestamp_formatted": "01:00",
+      "description": "In this video frame, the scene appears to be a digital presentation or animation. The background is plain white, which helps the text stand out clearly. There is a hand holding a black marker, actively writing on the screen, contributing to the presentation format. \n\nText in the image is black and blue:\n\n1. At the top, in bold black uppercase letters, is the title: \"ZERO KNOWLEDGE PROOF USE CASES.\"\n\n2. Below the title, there is a bullet point written in blue that reads: \"\u2013 PROVE A STUDENT HAVE PASSED THE EXAM WITHOUT SHOWING THE ACTUAL MARK.\"\n\n3. A second bullet point is being written. The hand with the marker is starting to write the word beginning with \"W\" in orange.\n\nThe setting of the frame gives the impression of a tutorial or informational video, utilizing a hand-drawn style to explain or list concepts related to \"Zero Knowledge Proof\" use cases. The use of color differentiates the main points (blue text) from the introductory title (black text) and emphasizes the action of writing (orange text).",
+      "frame_path": "storage/frame_2_49.jpg",
+      "frame_number": 2
+    },
+    {
+      "timestamp": 90,
+      "timestamp_formatted": "01:30",
+      "description": "The video frame shows a simple illustration with the following elements:\n\n1. **Text and Layout**:\n   - On the left side, there is black text that reads \"STRICT MATHEMATICAL PROOF.\"\n   - Below, partially visible, is the phrase \"BASED ON PROBABILITY\" in blue, with the word \"PROBABILITY\" circled in green.\n\n2. **Characters**:\n   - Two illustrated figures are present, labeled \"VERIFIER.\"\n   - The character on the left is a male figure with brown hair, wearing a dark suit and blue tie. He is gesturing with both hands, pointing with his right index finger.\n   - The character on the right is a female figure with brown hair tied back in a ponytail, also wearing a dark suit and white shirt. Her hands are raised, palms facing outward, in a possible gesture of explanation or negotiation.\n\n3. **Colors**:\n   - The background is plain white.\n   - The text is primarily black, with some blue and green elements.\n   - The human figures have natural skin tones, and both wear dark suits, with the male figure's tie being blue.\n\nThe frame is illustrative, likely from an educational or instructional video, focusing on concepts related to mathematical proof and probability.",
+      "frame_path": "storage/frame_3_73.jpg",
+      "frame_number": 3
+    },
+    {
+      "timestamp": 120,
+      "timestamp_formatted": "02:00",
+      "description": "The frame depicts a simple illustration of two characters labeled \"BOB\" and \"ALICE\" at the bottom. Both characters are wearing business suits; BOB is depicted pointing with his right hand, while ALICE has her hands open, facing BOB, as if in a discussion or conversation. The background is plain white, and there are no additional objects or settings visible. The illustration uses flat colors and a minimalistic design.",
+      "frame_path": "storage/frame_4_98.jpg",
+      "frame_number": 4
+    },
+    {
+      "timestamp": 150,
+      "timestamp_formatted": "02:30",
+      "description": "The video frame is an illustration showing two characters, labeled \"Bob\" and \"Alice,\" engaged in a conversation.\n\n- **Characters**:\n  - **Bob**: On the left, depicted as a light-skinned male in a suit and tie. He is pointing at Alice with one hand and gesturing with the other.\n  - **Alice**: On the right, depicted as a light-skinned female with long brown hair tied back, also in a suit and tie. She appears to be gesturing with one hand.\n\n- **Speech and Thought Bubbles**:\n  - **Bob's Speech Bubble**: Contains the text, \"PLEASE PROVE THAT YOU HAVE THE KEY TO THAT HOUSE.\"\n  - **Alice's Thought Bubble**: Contains the text, \"THE KEY CONTAINS MY PRIVACY INFORMATION ON IT, I DON\u2019T WANT TO SHOW IT TO BOB.\"\n\n- **Setting and Objects**:\n  - To the right of Alice, there is a simple illustration of a two-story house with a gray roof, blue windows, and a brown door.\n  - There is an empty speech bubble between the conversation, suggesting an incomplete dialogue or additional forthcoming content.\n\n- **Colors**:\n  - The background is white.\n  - Clothing is dark gray, with ties in a contrasting blue shade.\n  - Text within speech and thought bubbles is black, with some text in Alice's thought bubble in blue for emphasis.\n\nThe scene seems to depict a hypothetical or educational scenario,",
+      "frame_path": "storage/frame_5_122.jpg",
+      "frame_number": 5
+    },
+    {
+      "timestamp": 180,
+      "timestamp_formatted": "03:00",
+      "description": "The video frame depicts a hand holding a pen, seemingly in the process of drawing or writing on the scene. \n\n**People:**\nTwo illustrated characters, labeled \"BOB\" and \"ALICE,\" are displayed. \n- Bob is on the left, depicted in a suit and tie and has light-colored hair. \n- Alice is on the right, also in professional attire with a long brown ponytail.\n\n**Objects and Text:**\n- A speech bubble above Bob contains the text: \"PLEASE PROVE THESE TWO BALLS HAVE DIFFERENT\".\n- The names \"BOB\" and \"ALICE\" are written below their respective characters.\n\n**Colors:**\n- The background is plain white.\n- Bob's suit is dark gray with a blue tie.\n- Alice also appears to be wearing a dark gray suit.\n- The hand and pen in the foreground are in skin tones and gray, respectively.\n\n**Activities:**\n- The hand in the foreground suggests ongoing action, as if drawing or adding elements to the scene.\n\n**Setting:**\n- The simplistic design and layout suggest the frame is part of an animated or illustrative educational video, possibly explaining a concept or scenario.",
+      "frame_path": "storage/frame_6_147.jpg",
+      "frame_number": 6
+    },
+    {
+      "timestamp": 210,
+      "timestamp_formatted": "03:30",
+      "description": "The video frame is a cartoon illustration depicting two individuals named Bob and Alice, indicated by labels above their heads. \n\n- **Bob**: Positioned on the left, Bob is depicted in a suit with a blue tie. He is gesturing with his right hand towards Alice, facing her.\n\n- **Alice**: On the right, Alice is also in a formal suit. She is facing Bob with open hands.\n\n- **Objects**: Between Bob and Alice, there are two balls suspended in the air. The ball on the left is red, and the one on the right is green.\n\n- **Text**: Speech bubbles above each character convey dialogue.\n  - Bob's speech bubble says, \"PLEASE PROVE THESE TWO BALLS HAVE DIFFERENT COLORS.\"\n  - Alice\u2019s speech bubble says, \"TURN AROUND AND YOU CAN SWAP OR NOT SWAP THE BALL, AND I\u2019LL TELL IF YOU SWAP THE BALL.\"\n\n- **Setting**: The background is plain white, with no additional objects or elements, emphasizing the characters and their conversation.\n\nThe illustration appears to be a depiction of a logic or thought experiment, focusing on the concepts of differentiation and identification without visual cues.",
+      "frame_path": "storage/frame_7_172.jpg",
+      "frame_number": 7
+    },
+    {
+      "timestamp": 240,
+      "timestamp_formatted": "04:00",
+      "description": "The video frame features a simple, diagrammatic illustration focused on a logical or cryptographic scenario. \n\n1. **Diagram**: \n   - The illustration resembles a plan view of a room with two labeled areas, \"A\" on the left and \"B\" on the right.\n   - An arrow pointing downwards is situated inside section \"A\", while a key icon is located near the arrow, oriented towards section \"B\".\n\n2. **Text**: \n   - Central to the illustration, there is a block of text stating: \"ALICE WANT TO PROVE TO BOB THAT SHE HAS THE KEY TO THE DOOR\".\n   - This suggests a scenario where one party, Alice, aims to demonstrate possession of a key to another party, Bob.\n\n3. **Person**:\n   - A person is positioned above the diagram, seemingly gesturing or pointing. The attire and stance appear formal, possibly indicating Bob or an observer.\n\n4. **Colors**: \n   - The frame primarily uses black and white for the lines and text, while the arrow is colored blue.\n   - The key is also depicted in a shade of blue, emphasizing its importance in the scenario.\n\n5. **Setting**:\n   - The setting is abstract and focused on conveying a concept rather than depicting a realistic environment.\n   - It appears intended to illustrate a puzzle or problem related to cryptography or logical deduction.\n\nOverall, the frame serves to communicate an abstract concept centered on proof or demonstration of possession",
+      "frame_path": "storage/frame_8_196.jpg",
+      "frame_number": 8
+    },
+    {
+      "timestamp": 270,
+      "timestamp_formatted": "04:30",
+      "description": "In this video frame:\n\n1. **Setting and Layout**:\n   - The diagram depicts a scenario involving two people, Alice and Bob, with a rectangular path or room.\n   - There is a smaller rectangle within a larger one.\n\n2. **People**:\n   - Two illustrated characters are labeled \"ALICE\" and \"BOB\".\n   - Alice is at the bottom left corner of the diagram.\n   - Bob is at the top center of the diagram and pointing, with a speech bubble.\n\n3. **Text**:\n   - Inside the rectangle, text reads: \"ALICE WANT TO PROVE TO BOB THAT SHE HAS THE KEY TO THE DOOR\".\n   - Above Bob, the speech bubble says: \"PLEASE WALK OUT FROM?\"\n   - Near Alice, text instructs: \"CHOOSE A PLACE RANDOMLY\" with arrows pointing to points labeled \"A\" and \"B\".\n\n4. **Objects**:\n   - An illustration of a key is present just below the text inside the rectangle.\n   - Two arrows, \"A\" and \"B\", inside the rectangle suggest pathways or points for Alice to choose.\n\n5. **Colors**:\n   - The text and outlines are in black.\n   - The key is blue with a yellow handle.\n   - Alice and Bob are illustrated in dark-colored clothing.\n\n6. **Activity**:\n   - The scenario appears to be about Alice proving to Bob that she has a key, likely involving choosing a pathway or point (",
+      "frame_path": "storage/frame_9_221.jpg",
+      "frame_number": 9
+    }
+  ],
+  "processed_at": "2025-06-02T19:33:28.650572",
+  "status": "completed"
+}
