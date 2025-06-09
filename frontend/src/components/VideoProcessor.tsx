@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Youtube, Settings, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, Youtube, AlertCircle, Settings, Loader2 } from 'lucide-react';
 import { isValidYouTubeUrl, extractVideoId } from '../services/videoApi';
 import { LoadingSpinner } from './LoadingSpinner';
 import { type ProcessVideoRequest, type ProcessVideoResponse } from '../types/api';
@@ -44,7 +44,6 @@ export const VideoProcessor: React.FC<VideoProcessorProps> = ({
 }) => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [extractFrames, setExtractFrames] = useState(false);
-  const [maxDuration, setMaxDuration] = useState(300);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -68,15 +67,13 @@ export const VideoProcessor: React.FC<VideoProcessorProps> = ({
 
     console.log('Starting video processing:', {
       url: youtubeUrl,
-      extractFrames,
-      maxDuration
+      extractFrames
     });
 
     try {
       const result = await onProcessVideo({
         youtube_url: youtubeUrl,
-        extract_frames: extractFrames,
-        max_duration: maxDuration
+        extract_frames: extractFrames
       });
       
       console.log('Video processing completed:', result);
@@ -97,164 +94,138 @@ export const VideoProcessor: React.FC<VideoProcessorProps> = ({
   const videoId = extractVideoId(youtubeUrl);
 
   return (
-    <div className="card">
-      <div className="flex items-center space-x-2 mb-6">
-        <Upload className="h-6 w-6 text-primary" />
-        <h2 className="text-xl font-semibold text-gray-900">Process Video</h2>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* YouTube URL Input */}
-        <div>
-          <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700 mb-2">
-            YouTube URL
-          </label>
-          <div className="relative">
-            <Youtube className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              id="youtube-url"
-              type="url"
-              value={youtubeUrl}
-              onChange={(e) => setYoutubeUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className={`input pl-10 ${!isValidUrl ? 'border-red-300 focus:ring-red-500' : ''}`}
-              disabled={isProcessing}
-            />
+    <div className="card bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+      <div className="p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-primary/10 dark:bg-primary-light/10 rounded-lg">
+            <Upload className="h-6 w-6 text-primary dark:text-primary-light" />
           </div>
-          {!isValidUrl && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              Please enter a valid YouTube URL
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Process Video</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Enter a YouTube URL to start analyzing the video
             </p>
-          )}
-          {videoId && (
-            <p className="mt-1 text-sm text-gray-600">
-              Video ID: <code className="bg-gray-100 px-2 py-1 rounded">{videoId}</code>
-            </p>
-          )}
+          </div>
         </div>
 
-        {/* Advanced Options */}
-        <div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* YouTube URL Input */}
+          <div>
+            <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              YouTube URL
+            </label>
+            <div className="relative">
+              <Youtube className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                id="youtube-url"
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
+                  !isValidUrl 
+                    ? 'border-red-300 dark:border-red-500 focus:ring-red-500 dark:focus:ring-red-400' 
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-primary dark:focus:ring-primary-light'
+                } bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors`}
+                disabled={isProcessing}
+              />
+            </div>
+            {!isValidUrl && (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1.5" />
+                Please enter a valid YouTube URL
+              </p>
+            )}
+            {videoId && (
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Video ID: <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{videoId}</code>
+              </p>
+            )}
+          </div>
+
+          {/* Advanced Options */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Advanced Options</span>
+            </button>
+
+            {showAdvanced && (
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-4">
+                {/* Frame Extraction */}
+                <div className="flex items-center space-x-3">
+                  <input
+                    id="extract-frames"
+                    type="checkbox"
+                    checked={extractFrames}
+                    onChange={(e) => setExtractFrames(e.target.checked)}
+                    className="h-4 w-4 text-primary dark:text-primary-light border-gray-300 dark:border-gray-600 rounded focus:ring-primary dark:focus:ring-primary-light bg-white dark:bg-gray-700"
+                    disabled={isProcessing}
+                  />
+                  <label htmlFor="extract-frames" className="text-sm text-gray-700 dark:text-gray-300">
+                    Extract video frames for visual search
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Submit Button */}
           <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900"
+            type="submit"
+            disabled={isProcessing || !youtubeUrl.trim() || !isValidUrl}
+            className="w-full flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary dark:bg-primary-light hover:bg-primary-dark dark:hover:bg-primary-light/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-primary-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Settings className="h-4 w-4" />
-            <span>Advanced Options</span>
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Processing Video...
+              </>
+            ) : (
+              'Process Video'
+            )}
           </button>
+        </form>
 
-          {showAdvanced && (
-            <div className="mt-4 space-y-4 bg-gray-50 p-4 rounded-lg">
-              {/* Frame Extraction */}
-              <div className="flex items-center space-x-3">
-                <input
-                  id="extract-frames"
-                  type="checkbox"
-                  checked={extractFrames}
-                  onChange={(e) => setExtractFrames(e.target.checked)}
-                  className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-                  disabled={isProcessing}
-                />
-                <label htmlFor="extract-frames" className="text-sm text-gray-700">
-                  Extract video frames for visual search
-                </label>
-              </div>
-
-              {/* Max Duration */}
-              <div>
-                <label htmlFor="max-duration" className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Duration (seconds): {maxDuration}
-                </label>
-                <input
-                  id="max-duration"
-                  type="range"
-                  min="60"
-                  max="600"
-                  step="30"
-                  value={maxDuration}
-                  onChange={(e) => setMaxDuration(Number(e.target.value))}
-                  className="w-full"
-                  disabled={isProcessing}
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>1 min</span>
-                  <span>10 min</span>
-                </div>
-              </div>
-
-              {extractFrames && (
-                <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded">
-                  ⚠️ Frame extraction requires OpenAI API key and will use additional API credits
-                </div>
-              )}
+        {/* Success Message */}
+        {(processedVideo) && (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h3 className="font-medium text-green-900">Video Processed Successfully!</h3>
             </div>
-          )}
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isProcessing || !youtubeUrl || !isValidUrl}
-          className="btn btn-primary w-full"
-        >
-          {isProcessing ? (
-            <div className="flex items-center justify-center space-x-2">
-              <LoadingSpinner size="sm" message="" />
-              <span>Processing Video...</span>
+            <div className="mt-2 text-sm text-green-700">
+              <p><strong>Video ID:</strong> {processedVideo.video_id}</p>
+              <p><strong>Title:</strong> {processedVideo.video_info.title}</p>
+              {(() => {
+                const duration = processedVideo.video_info.duration;
+                if (typeof duration === 'number') {
+                  const minutes = Math.floor(duration / 60);
+                  const seconds = duration % 60;
+                  return (
+                    <p><strong>Duration:</strong> {minutes}:{seconds.toString().padStart(2, '0')}</p>
+                  );
+                }
+                return null;
+              })()}
             </div>
-          ) : (
-            'Process Video'
-          )}
-        </button>
-      </form>
+          </div>
+        )}
 
-      {/* Success Message */}
-      {(processedVideo) && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <h3 className="font-medium text-green-900">Video Processed Successfully!</h3>
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-700 dark:text-red-400 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1.5" />
+              {error}
+            </p>
           </div>
-          <div className="mt-2 text-sm text-green-700">
-            <p><strong>Video ID:</strong> {processedVideo.video_id}</p>
-            <p><strong>Title:</strong> {processedVideo.video_info.title}</p>
-            {(() => {
-              const duration = processedVideo.video_info.duration;
-              if (typeof duration === 'number') {
-                const minutes = Math.floor(duration / 60);
-                const seconds = duration % 60;
-                return (
-                  <p><strong>Duration:</strong> {minutes}:{seconds.toString().padStart(2, '0')}</p>
-                );
-              }
-              return null;
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <h3 className="font-medium text-red-900">Processing Failed</h3>
-          </div>
-          <p className="mt-1 text-sm text-red-700">{error}</p>
-          {error.includes('no transcript available') && (
-            <div className="mt-2 text-sm text-red-600">
-              <p>Tips:</p>
-              <ul className="list-disc list-inside mt-1">
-                <li>Make sure the video has captions/subtitles enabled</li>
-                <li>Try a different video with captions</li>
-                <li>Check if the video is public and accessible</li>
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

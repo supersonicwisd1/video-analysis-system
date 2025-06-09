@@ -1,7 +1,7 @@
 """Health check endpoints"""
 from datetime import datetime
 from fastapi import APIRouter, Request
-from app.config import get_settings
+from app.core.config import get_settings
 from app.api.models.responses import HealthResponse
 
 router = APIRouter()

@@ -1,14 +1,13 @@
 // src/components/SearchInterface.tsx - Enhanced Chat Version
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, MessageSquare, Sparkles, Send, Bot, Clock, Copy, ExternalLink, Youtube } from 'lucide-react';
-import { SearchResponse } from '../types/api';
-import { LoadingSpinner } from './LoadingSpinner';
+import { Bot, MessageSquare, Eye, Copy, ExternalLink, Send, Loader2, Clock } from 'lucide-react';
+import { SearchResponse, SearchSource } from '../types/api';
 
 interface ChatMessage {
   type: 'user' | 'assistant';
-  query: string;
-  timestamp: Date;
-  response?: SearchResponse;
+  content: string;
+  timestamp: string;
+  sources?: SearchSource[];
 }
 
 interface SearchInterfaceProps {
@@ -19,6 +18,7 @@ interface SearchInterfaceProps {
   onSearch: (query: string) => Promise<void>;
   onVisualSearch: (query: string) => Promise<void>;
   onClearError: () => void;
+  seekToTimestamp?: (timestamp: number) => void;
 }
 
 export const SearchInterface: React.FC<SearchInterfaceProps> = ({
@@ -28,12 +28,14 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
   error,
   onSearch,
   onVisualSearch,
-  onClearError
+  onClearError,
+  seekToTimestamp
 }) => {
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState<'transcript' | 'visual'>('transcript');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Reset chat history when video changes
   useEffect(() => {
@@ -49,15 +51,44 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
 
   // Update chat history when search results arrive
   useEffect(() => {
-    if (searchResults && chatHistory.length > 0) {
-      const lastMessage = chatHistory[chatHistory.length - 1];
-      if (lastMessage.type === 'user' && !lastMessage.response) {
-        setChatHistory(prev => prev.map((msg, idx) => 
-          idx === prev.length - 1 ? { ...msg, response: searchResults } : msg
-        ));
-      }
+    if (searchResults) {
+      console.log('Raw search results received:', searchResults);
+      
+      // Add user message to chat history
+      const userMessage: ChatMessage = {
+        type: 'user',
+        content: searchResults.query,
+        timestamp: `${new Date().toISOString()}-user`  // Make timestamp unique
+      };
+      console.log('Adding user message:', userMessage);
+      
+      // Add assistant message with answer and sources
+      const assistantMessage: ChatMessage = {
+        type: 'assistant',
+        content: searchResults.answer || 'No answer available.',
+        timestamp: `${new Date().toISOString()}-assistant`,  // Make timestamp unique
+        sources: searchResults.sources || searchResults.results || []
+      };
+      console.log('Adding assistant message:', assistantMessage);
+
+      // Update chat history with both messages at once to avoid duplicate renders
+      setChatHistory(prev => {
+        // Remove any existing messages with the same query to prevent duplicates
+        const filteredHistory = prev.filter(msg => 
+          msg.type !== 'user' || msg.content !== searchResults.query
+        );
+        return [...filteredHistory, userMessage, assistantMessage];
+      });
     }
-  }, [searchResults, chatHistory]);
+  }, [searchResults]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 150)}px`;
+    }
+  }, [query]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,25 +97,31 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
     // Add user message to chat
     const userMessage: ChatMessage = {
       type: 'user',
-      query: query.trim(),
-      timestamp: new Date()
+      content: query.trim(),
+      timestamp: new Date().toISOString()
     };
     setChatHistory(prev => [...prev, userMessage]);
 
     try {
       if (searchType === 'visual') {
-        await onVisualSearch(query);
+        await onVisualSearch(query.trim());
       } else {
-        await onSearch(query);
+        await onSearch(query.trim());
       }
       setQuery('');
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+      }
     } catch (err) {
       console.error('Search error:', err);
     }
   };
 
-  const handleQuickQuery = (quickQuery: string) => {
-    setQuery(quickQuery);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
   };
 
   const copyToClipboard = async (text: string) => {
@@ -118,22 +155,81 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
     ]
   };
 
-  return (
-    <div className="card h-[calc(100vh-12rem)] flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4 mb-4">
-        <div className="flex items-center space-x-2">
-          <Bot className="h-6 w-6 text-primary" />
-          <h2 className="text-xl font-semibold text-gray-900">Chat with Your Video</h2>
+  const renderChatMessage = (message: ChatMessage) => {
+    console.log('Rendering message:', message);
+    const isUser = message.type === 'user';
+    const hasSources = message.sources && message.sources.length > 0;
+    console.log('Message has sources:', hasSources, message.sources);
+
+    return (
+      <div key={message.timestamp} className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`max-w-[80%] ${isUser ? 'bg-blue-500 text-white' : 'bg-gray-100'} rounded-lg p-4`}>
+          {/* Message content */}
+          <div className="whitespace-pre-wrap">
+            {isUser ? message.content : (
+              <>
+                <div className="font-medium mb-2">Answer:</div>
+                <div>{message.content}</div>
+              </>
+            )}
+          </div>
+
+          {/* Sources section */}
+          {!isUser && hasSources && message.sources && (
+            <div className="mt-4 space-y-2">
+              <div className="text-sm font-semibold text-gray-600">Sources:</div>
+              {message.sources.map((source, index) => {
+                const timestamp = source.timestamp || 0;
+                const minutes = Math.floor(timestamp / 60);
+                const seconds = Math.floor(timestamp % 60);
+                const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                return (
+                  <div key={`${message.timestamp}-source-${index}`} className="bg-white rounded p-3 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        {formattedTime}
+                      </span>
+                      <button
+                        onClick={() => seekToTimestamp?.(timestamp)}
+                        className="text-blue-500 hover:text-blue-700 text-sm flex items-center space-x-1"
+                      >
+                        <Clock className="h-4 w-4" />
+                        <span>Jump to {formattedTime}</span>
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-600">{source.text}</p>
+                    {source.confidence && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Confidence: {(source.confidence * 100).toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+        <div className="flex items-center space-x-3">
+          <Bot className="h-6 w-6 text-primary dark:text-primary-light" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Chat with Your Video</h2>
+        </div>
+        <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           <button
             type="button"
             onClick={() => setSearchType('transcript')}
-            className={`flex items-center justify-center space-x-2 py-1 px-3 rounded-md text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center space-x-2 py-1.5 px-3 rounded-md text-sm font-medium transition-all ${
               searchType === 'transcript'
-                ? 'bg-white text-primary shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-600 text-primary dark:text-primary-light shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <MessageSquare className="h-4 w-4" />
@@ -142,10 +238,10 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
           <button
             type="button"
             onClick={() => setSearchType('visual')}
-            className={`flex items-center justify-center space-x-2 py-1 px-3 rounded-md text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center space-x-2 py-1.5 px-3 rounded-md text-sm font-medium transition-all ${
               searchType === 'visual'
-                ? 'bg-white text-primary shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-600 text-primary dark:text-primary-light shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <Eye className="h-4 w-4" />
@@ -155,108 +251,34 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-4">
-        {chatHistory.map((message, index) => (
-          <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div 
-              className={`w-full max-w-[90%] ${
-                message.type === 'user' 
-                  ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-sm' 
-                  : 'bg-white border border-gray-200 rounded-2xl rounded-tl-none shadow-sm'
-              } p-4`}
-            >
-              {/* Message Header */}
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs ${message.type === 'user' ? 'text-indigo-100' : 'text-gray-500'}`}>
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
-                {message.type === 'user' && message.response?.answer && (
-                  <button
-                    onClick={() => message.response && copyToClipboard(message.response.answer)}
-                    className={`text-xs ${message.type === 'user' ? 'text-indigo-100' : 'text-gray-500'} hover:opacity-100`}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-
-              {/* Message Content */}
-              <p className={`text-sm mb-2 ${message.type === 'user' ? 'text-white' : 'text-gray-800'}`}>
-                {message.query}
-              </p>
-
-              {/* Assistant Response */}
-              {message.type === 'user' && message.response && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm mb-3 text-[#D97707] whitespace-pre-wrap">{message.response.answer}</p>
-                  
-                  {/* Sources */}
-                  {message.response.sources && message.response.sources.length > 0 && (
-                    <div className="mt-3 space-y-3">
-                      {message.response.sources.map((source, idx) => (
-                        <div key={idx} className="text-sm bg-gray-50 p-3 rounded-lg border border-gray-100">
-                          <div className="flex items-center justify-between mb-2">
-                            <a
-                              href={source.youtube_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              <Clock className="h-4 w-4" />
-                              <span>{String(source.metadata.timestamp_formatted)}</span>
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                          {source.content && (
-                            <div className="text-gray-700 mt-2">
-                              {(source.content as string).split('\n\n').map((part: string, i: number) => {
-                                // Check if the part contains a markdown link
-                                const linkMatch = part.match(/\[Watch at (\d{2}:\d{2})\]\((.*?)\)/);
-                                if (linkMatch && typeof linkMatch[1] === 'string' && typeof linkMatch[2] === 'string') {
-                                  return (
-                                    <a
-                                      key={i}
-                                      href={linkMatch[2]}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-700 flex items-center space-x-1"
-                                    >
-                                      <Clock className="h-3 w-3" />
-                                      <span>{linkMatch[1]}</span>
-                                      <ExternalLink className="h-2 w-2" />
-                                    </a>
-                                  );
-                                }
-                                return <p key={i} className="whitespace-pre-wrap text-gray-700">{part}</p>;
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Response Footer */}
-                  <div className="mt-3 text-xs text-gray-600 flex items-center justify-between">
-                    <span className="flex items-center space-x-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{(message.response.response_time * 1000).toFixed(0)}ms</span>
-                    </span>
-                    <span className="capitalize">
-                      {message.response.search_type || 'transcript'} search
-                    </span>
-                  </div>
-                </div>
-              )}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Quick Starters - Moved back to chat area */}
+        {chatHistory.length === 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+              Try asking about:
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {conversationStarters[searchType].map((starter, index) => (
+                <button
+                  key={index}
+                  onClick={() => setQuery(starter)}
+                  className="text-left p-3 text-sm bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {starter}
+                </button>
+              ))}
             </div>
           </div>
-        ))}
+        )}
+
+        {chatHistory.map(renderChatMessage)}
         {isSearching && (
-          <div className="flex justify-start">
-            <div className="w-full max-w-[90%] bg-white border border-gray-200 rounded-2xl rounded-tl-none p-4 shadow-sm">
-              <div className="flex items-center space-x-2 text-indigo-600">
-                <LoadingSpinner size="sm" message="" />
-                <span className="text-sm">AI is thinking...</span>
+          <div className="flex justify-start animate-fade-in">
+            <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-tl-none p-4 shadow-sm">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500 dark:text-gray-400" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Searching...</span>
               </div>
             </div>
           </div>
@@ -264,55 +286,29 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
         <div ref={chatEndRef} />
       </div>
 
-      {/* Chat Input */}
-      <div className="border-t pt-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
+      {/* Input Area */}
+      <div className="p-4 border-t dark:border-gray-700 bg-white dark:bg-gray-800">
+        <form onSubmit={handleSubmit} className="flex items-end space-x-2">
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                searchType === 'transcript'
-                  ? 'Ask me anything about what was said...'
-                  : 'Ask me about what you see in the video...'
-              }
-              className="input pl-10 pr-12"
-              disabled={isSearching}
+              onKeyDown={handleKeyDown}
+              placeholder={`Ask about the video's ${searchType === 'transcript' ? 'content' : 'visuals'}...`}
+              className="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-transparent p-3 pr-12 min-h-[44px] max-h-[150px]"
+              rows={1}
             />
             <button
               type="submit"
-              disabled={isSearching || !query.trim()}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-primary hover:text-blue-600 disabled:text-gray-400"
+              disabled={!query.trim() || isSearching}
+              className="absolute right-2 bottom-2 p-1.5 text-primary dark:text-primary-light hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             </button>
-          </div>
-
-          {/* Quick Starters */}
-          <div className="grid grid-cols-2 gap-2">
-            {conversationStarters[searchType].map((starter, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleQuickQuery(starter)}
-                className="text-left text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-2 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
-                disabled={isSearching}
-              >
-                "{starter}"
-              </button>
-            ))}
           </div>
         </form>
       </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">❌ {error}</p>
-        </div>
-      )}
     </div>
   );
 };

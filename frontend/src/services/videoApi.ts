@@ -16,8 +16,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Add CORS headers
-  withCredentials: true
+  // Remove withCredentials since we don't need it for this API
+  withCredentials: false
 });
 
 // Special instance for video processing with longer timeout
@@ -27,8 +27,8 @@ const videoProcessingApi = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 300000, // 5 minutes for video processing
-  // Add CORS headers
-  withCredentials: true
+  // Remove withCredentials since we don't need it for this API
+  withCredentials: false
 });
 
 // Request/Response interceptors for error handling
@@ -100,6 +100,18 @@ videoProcessingApi.interceptors.response.use(
   errorInterceptor
 );
 
+interface ProcessingOptions {
+  quality?: 'auto' | 'high' | 'medium' | 'low';
+  parallel?: boolean;
+  preload?: boolean;
+}
+
+interface SegmentRequest {
+  start_time?: number;
+  limit?: number;
+  quality?: string;
+}
+
 export class VideoApi {
   /**
    * Process a YouTube video for RAG search
@@ -110,10 +122,40 @@ export class VideoApi {
   }
 
   /**
+   * Process video transcript
+   */
+  static async processTranscript(videoId: string, options: ProcessingOptions = {}): Promise<any> {
+    const response = await videoProcessingApi.post(`/${videoId}/process/transcript`, { options });
+    return response.data;
+  }
+
+  /**
+   * Process visual content
+   */
+  static async processVisualContent(videoId: string, options: ProcessingOptions = {}): Promise<any> {
+    const response = await videoProcessingApi.post(`/${videoId}/process/visual`, { options });
+    return response.data;
+  }
+
+  /**
+   * Get video segments with optional quality and preloading
+   */
+  static async getVideoSegments(videoId: string, params: SegmentRequest = {}): Promise<{
+    segments: any[];
+    has_more: boolean;
+  }> {
+    const response = await api.get(`/videos/${videoId}/segments`, { params });
+    return response.data;
+  }
+
+  /**
    * Search within a processed video (transcript)
    */
   static async searchVideo(request: SearchRequest): Promise<SearchResponse> {
-    const response: AxiosResponse<SearchResponse> = await api.post('/search/', request);
+    const response: AxiosResponse<SearchResponse> = await api.post('/search/', {
+      ...request,
+      search_type: 'transcript'  // Explicitly set search type
+    });
     return response.data;
   }
 
@@ -121,7 +163,10 @@ export class VideoApi {
    * Search visual content in video frames
    */
   static async searchVisualContent(request: SearchRequest): Promise<SearchResponse> {
-    const response: AxiosResponse<SearchResponse> = await api.post('/search/visual', request);
+    const response: AxiosResponse<SearchResponse> = await api.post('/search/', {
+      ...request,
+      search_type: 'visual'  // Explicitly set search type
+    });
     return response.data;
   }
 
@@ -129,7 +174,7 @@ export class VideoApi {
    * Get video information
    */
   static async getVideoInfo(videoId: string): Promise<VideoInfo> {
-    const response: AxiosResponse<VideoInfo> = await api.get(`/videos/${videoId}`);
+    const response: AxiosResponse<VideoInfo> = await api.get(`/videos/${videoId}/`);
     return response.data;
   }
 
@@ -145,8 +190,23 @@ export class VideoApi {
    * Check if API is healthy
    */
   static async healthCheck(): Promise<{ status: string }> {
-    const response = await api.get('/health');
+    const response = await api.get('/health/');
     return response.data;
+  }
+
+  /**
+   * Get processing status
+   */
+  static async getProcessingStatus(videoId: string): Promise<any> {
+    const response = await videoProcessingApi.get(`/${videoId}/status`);
+    return response.data;
+  }
+
+  /**
+   * Cancel video processing
+   */
+  static async cancelProcessing(videoId: string): Promise<void> {
+    await videoProcessingApi.post(`/${videoId}/cancel`);
   }
 }
 

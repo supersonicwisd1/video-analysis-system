@@ -2,7 +2,7 @@
 from app.api.models.requests import SearchRequest, ChatRequest, ProcessVideoRequest
 from app.api.models.responses import (
     SearchResponse, ChatResponse, ProcessVideoResponse,
-    VideoInfo, SearchSource, HealthResponse, ErrorResponse
+    VideoMetadata, VideoInfo, ErrorResponse
 )
 
 __all__ = [
@@ -14,8 +14,7 @@ __all__ = [
     'SearchResponse',
     'ChatResponse',
     'ProcessVideoResponse',
+    'VideoMetadata',
     'VideoInfo',
-    'SearchSource',
-    'HealthResponse',
     'ErrorResponse'
 ] 

@@ -8,40 +8,61 @@ export interface VideoInfo {
 }
 
 export interface SearchSource {
-  content: string;
-  metadata: Record<string, unknown>;
-  timestamp_range?: string;
-  youtube_link?: string;
+  text: string;
+  timestamp: number;
+  end_time?: number;
+  youtube_link: string;
+  confidence: number;
   source_type: string;
-  relevance_score?: number;
+  timestamp_formatted?: string;
+}
+
+export interface SearchResult {
+  text: string;
+  timestamp: number;
+  end_time?: number;
+  youtube_link: string;
+  confidence: number;
+  source_type?: string;
+  timestamp_formatted?: string;
 }
 
 export interface SearchResponse {
   query: string;
-  answer: string;
-  sources: SearchSource[];
-  video_id: string;
+  search_type: 'transcript' | 'visual' | 'hybrid';
+  results?: SearchSource[];
+  sources?: SearchSource[];
+  answer?: string;
   response_time: number;
-  search_type?: string;
+  video_id?: string;
+}
+
+export interface ProcessingOptions {
+  quality?: 'auto' | 'high' | 'medium' | 'low';
+  parallel_processing?: boolean;
+  preload_segments?: boolean;
+  max_parallel_tasks?: number;
+  extract_frames?: boolean;
+  max_duration?: number;
 }
 
 export interface ProcessVideoRequest {
   youtube_url: string;
-  extract_frames: boolean;
-  max_duration: number;
+  options?: ProcessingOptions;
 }
 
 export interface ProcessVideoResponse {
   video_id: string;
   status: string;
   message: string;
-  video_info: VideoInfo;
+  metadata: VideoInfo | null;
 }
 
 export interface SearchRequest {
   video_id: string;
   query: string;
   top_k?: number;
+  search_type?: 'transcript' | 'visual' | 'hybrid';
 }
 
 export interface ApiError {

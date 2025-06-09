@@ -4,55 +4,793 @@
   "video_info": {
     "video_path": "storage/kD3-DKkiVeA.mp4",
     "title": "Why you feel stuck \u2014 and how to get motivated - Shannon Odell",
-    "duration": 300,
-    "video_id": "kD3-DKkiVeA"
+    "duration": 300
   },
-  "transcript_segments": 74,
-  "frames_extracted": 6,
-  "frame_descriptions": [
+  "sections": [
     {
-      "timestamp": 0,
-      "timestamp_formatted": "00:00",
-      "description": "The image is a logo on a white background. In large, bold letters, the text \"TED\" is written in red with a textured, hand-drawn appearance. Next to it, \"Ed\" is in black, also with a similar texture. Below this, there is smaller, black text that reads \"LESSONS WORTH SHARING.\" The overall design is clean and simple, focusing on the prominent red and black text. There are no people, objects, or additional scenes in the frame. It gives a professional and educational impression.",
-      "frame_path": "storage/frame_0_0.jpg",
-      "frame_number": 0
-    },
-    {
-      "timestamp": 30,
-      "timestamp_formatted": "00:30",
-      "description": "The image is a minimalist, hand-drawn illustration. On the left, there is a large depiction of an angelic figure with a peaceful expression, curly hair, a halo, and small wings. The angel is holding a lyre, and the colors are muted, primarily beige and light brown, giving it a celestial, ethereal feel. Below the angel, there is a donkey's face, looking upwards.\n\nOn the right, there is a figure resembling a historical artist. The character is wearing a beret and holds a paintbrush in one hand. They appear to be observing the angelic scene, perhaps involved in creating or admiring it.\n\nThere's scaffolding drawn in simple lines, indicating an artistic setting, possibly a studio or space where the artist is working. The background is plain and light-colored, ensuring the focus remains on the illustrated characters and their interaction. The overall use of color is subtle, relying heavily on line work to convey detail and form.",
-      "frame_path": "storage/frame_1_49.jpg",
-      "frame_number": 1
-    },
-    {
-      "timestamp": 60,
-      "timestamp_formatted": "01:00",
-      "description": "The video frame depicts a simple illustration with a stage setting. Three figures are present: two adults and a child. The adult on the left appears to be a woman with curly hair, wearing glasses and a long skirt. She is shaking hands with a child, who has dark hair tied in pigtails and is smiling. The child is the center of attention, suggesting an important moment. To the right is another adult, a man with a bald head and wearing a suit, watching the handshake.\n\nAbove the stage, a banner reads \"ELECTED SCHOOL PRESIDENT\" with each letter in a different color, giving a cheerful and festive look. The background features pink curtains and several microphones on stands are placed on the stage. In the foreground, a few raised hands are visible, possibly indicating an audience. The color palette is mostly muted with pink and pastel tones. The illustration style is simple and childlike, adding a playful charm to the scene.",
-      "frame_path": "storage/frame_2_99.jpg",
-      "frame_number": 2
-    },
-    {
-      "timestamp": 90,
-      "timestamp_formatted": "01:30",
-      "description": "The image is an illustration depicting a bedroom scene. Key elements include:\n\n1. **Bed and Person**: There is a simple bed with a minimalist design. A person is under a large white blanket, with only a part of their hair visible.\n\n2. **Smartphone**: A smartphone is placed on the bed, next to the person.\n\n3. **Posters**: Five posters are on the wall behind the bed. Each poster has different artwork and text:\n\n   - **Poster 1**: Titled \"WHEN THE WIND BLOWS,\" featuring an explosion with two figures below.\n   \n   - **Poster 2**: Titled \"PLASTIC OCEAN,\" depicting a white object, possibly a whale or an iceberg, in a blue, ocean-like setting.\n   \n   - **Poster 3**: Titled \"AN INCONVENIENT TRUTH,\" featuring a hurricane-like design in monochrome.\n   \n   - **Poster 4**: Titled \"DON'T LOOK UP,\" with an illustration of what appears to be a comet or meteor against an orange sky.\n   \n   - **Poster 5**: Titled \"THE DAY AFTER TOMORROW,\" showing an image of a frozen urban landscape with a statue.\n\n4. **Colors**: The color palette is predominantly neutral and pastel with white, gray, blue, orange, and muted tones providing a calm atmosphere.\n\nThe setting suggests a personal space with an interest in environmental and apocalyptic themes, as",
-      "frame_path": "storage/frame_3_149.jpg",
-      "frame_number": 3
-    },
-    {
-      "timestamp": 120,
-      "timestamp_formatted": "02:00",
-      "description": "This is a black-and-white sketch drawing. Here\u2019s a detailed description:\n\n- **Setting:** The scene depicts an urban street, with a bus prominently featured.\n- **Bus:** A large vehicle occupies the left side of the image. It is stylized with simple lines and has visible windows and large wheels. The bus has a driver visible through the windshield.\n- **Person:** To the right, a person is standing near a bus stop. They are wearing glasses, a skirt or long dress, and a top, and are holding a small purse. \n- **Bus Stop:** There is a sign with the word \u201cBUS\u201d indicating a bus stop.\n- **Colors:** The image is in grayscale, with no additional colors apart from shades of black, white, and gray.\n- **Art Style:** The drawing is simplistic and cartoon-like, using minimal detail and bold lines.\n\nThe person appears to be waiting for the bus, with a neutral or calm demeanor. The overall scene is lighthearted, with a humorous or whimsical style typical of a cartoon sketch.",
-      "frame_path": "storage/frame_4_199.jpg",
-      "frame_number": 4
-    },
-    {
-      "timestamp": 150,
-      "timestamp_formatted": "02:30",
-      "description": "The image depicts a simple, hand-drawn scene featuring three cartoon characters and a board. Here's a detailed breakdown:\n\n1. **Characters:**\n   - There are three cartoon characters, each simply drawn with distinct features.\n   - The character on the left wears a wide-brimmed hat, possibly signifying an adult or an organizer.\n   - Two smaller characters stand to the right. One has a light-colored face and hair, with a heart near their head, possibly indicating affection or enthusiasm.\n   - The other small character has a darker face and hair and is pointing at the board with a stick, possibly explaining or instructing.\n\n2. **Objects:**\n   - A large board is set up on a stand with the title \"BEACH CLEANUP PLAN\" at the top.\n   - The board is divided into sections with illustrations:\n     - Three stick figures at different locations.\n     - Groups of drawn bags, likely symbolizing collected trash.\n     - Waves are illustrated at the bottom of the board, indicating the beach setting.\n     - Green dashed lines might signify sections or divisions of the beach area.\n\n3. **Setting:**\n   - The scene is minimalistic, with an implied outdoor setting, possibly on the beach, as suggested by the title and waves.\n   - There are faint outlines of flags or tents in the background on the left, indicating an event setting.\n\n4. **Colors:**\n   - The image uses a simple color palette: black lines for outlines with",
-      "frame_path": "storage/frame_5_249.jpg",
-      "frame_number": 5
+      "start_time": 0.0,
+      "end_time": 294.56,
+      "content_type": "speech_to_text",
+      "title": "Speech_To_Text at 00:00",
+      "content": " You're in the middle of a project when suddenly moving forward seems impossible....\nTitle: Why you feel stuck \u2014 and how to get motivated - Shannon Odell\nDuration: 300 seconds\n Maybe you don't know what the next step is, or perhaps you face setbacks and you're\n starting to think, what's even the point?\n Many of us have experienced feeling stuck.\n It can happen when tackling something as simple as a term paper, or as monumental as social\n inequality or the climate crisis.\n So are there ways to get unstuck?\n People often report feeling highly motivated at the start and end of a project, but the\n middle can feel untethered.\n Psychologists call this the stuck in the middle effect, and it's thought to be caused by a shift\n in perspective that happens as you move closer to your goals.\n When you start working towards something, any progress can feel like a win, as we tend\n to compare ourselves against where we started.\n For example, when someone starts training for a marathon, accomplishing even a short jog\n can feel motivating.\n But the longer you work on something, the more likely it is that your focus shifts to\n your end goal.\n In other words, rather than seeing how far you've come, it's easy to become frustrated\n by how far you still need to go.\n A simple way to avoid these motivational sinkholes is to break your pursuits into smaller,\n more achievable, sub-goals.\n This creates less daunting incremental benchmarks to compare your progress to.\n It also creates more opportunities to celebrate wins along the way.\n This is especially important when working towards bigger societal goals.\n These issues are by nature large scale and complex.\n No single action or person is likely to solve them.\n So if you only focus on the end goal, it's easy to feel personally powerless.\n And the enormity of these problems may be why so many people, including those who care\n deeply about the issues, think that progress is impossible, leading them to disengage.\n In fact, one 2021 global survey of young people found that over half believed humanity\n is doomed.\n But despite these obstacles, some people do manage to stay motivated, engaged, and unstuck.\n So how do they do it?\n Surprisingly, it's not all about how concerned you are or how much you care about the issue\n in front of you.\n For instance, research has found that among those who feel the most alarmed about climate\n change, only about a third take regular climate action.\n However, a unifying factor among those who do take action is the confidence that their\n personal involvement could make a difference.\n And this belief isn't misguided.\n The long history of social progress proves that change is possible, and individual actions\n whether it's volunteering, voting, protesting, or personally contributing to a communal goal\n are key to building the collective momentum that has tackled seemingly impenetrable issues.\n It's not to say that concern and passion have no place.\n Moral outrage or anger can help us focus on what's at stake.\n And when it's correctly harnessed, outrage can be a powerful unifier.\n In the American Civil Rights Movement, shared anger over systemic racism, injustice, and\n violence against black people galvanized diverse communities to work together in the fight\n for equality.\n And bringing together people of different backgrounds and mindsets is essential to building\n longevity and resilience in any movement.\n In this way, thinking about how you can apply your own unique perspective, knowledge, and\n expertise to promoting change can be helpful.\n And finding community has plenty of other benefits.\n Just witnessing other people at work has been shown to motivate personal action, creating\n a positive feedback loop.\n Collaboration can help you better problem solve when you're unsure what the next step is,\n to support an encouragement of others can serve as a source of inspiration and joy if you're\n feeling exhausted, defeated, or stuck.\n The path to conquering any goal is long and bound to hit sticking points.\n Often the best way to get unstuck is just to take any action, no matter how small or\n imperfect the outcome.\n Progress starts with writing that next sentence, running that extra mile, or even casting\n that vote to build a better future.\n Need an extra push to get unstuck with your climate goals?\n Ted countdown is here to help.\n Countdown is a global initiative aimed at turning innovative solutions into planet-saving\n realities.\n Learn how you can be part of building a cleaner future at countdown.ted.com.",
+      "confidence": 0.8
     }
   ],
-  "processed_at": "2025-06-02T18:41:38.032772",
+  "segments": [
+    {
+      "start_time": 0.0,
+      "end_time": 12.8,
+      "content_type": "speech_to_text",
+      "content": " You're in the middle of a project when suddenly moving forward seems impossible.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 12.8,
+      "end_time": 17.080000000000002,
+      "content_type": "speech_to_text",
+      "content": " Maybe you don't know what the next step is, or perhaps you face setbacks and you're",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 17.080000000000002,
+      "end_time": 20.44,
+      "content_type": "speech_to_text",
+      "content": " starting to think, what's even the point?",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 20.44,
+      "end_time": 23.48,
+      "content_type": "speech_to_text",
+      "content": " Many of us have experienced feeling stuck.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 23.48,
+      "end_time": 29.44,
+      "content_type": "speech_to_text",
+      "content": " It can happen when tackling something as simple as a term paper, or as monumental as social",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 29.44,
+      "end_time": 32.36,
+      "content_type": "speech_to_text",
+      "content": " inequality or the climate crisis.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 32.36,
+      "end_time": 35.2,
+      "content_type": "speech_to_text",
+      "content": " So are there ways to get unstuck?",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 35.2,
+      "end_time": 40.68,
+      "content_type": "speech_to_text",
+      "content": " People often report feeling highly motivated at the start and end of a project, but the",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 40.68,
+      "end_time": 43.92,
+      "content_type": "speech_to_text",
+      "content": " middle can feel untethered.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 43.92,
+      "end_time": 48.28,
+      "content_type": "speech_to_text",
+      "content": " Psychologists call this the stuck in the middle effect, and it's thought to be caused by a shift",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 48.28,
+      "end_time": 52.08,
+      "content_type": "speech_to_text",
+      "content": " in perspective that happens as you move closer to your goals.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 52.08,
+      "end_time": 57.2,
+      "content_type": "speech_to_text",
+      "content": " When you start working towards something, any progress can feel like a win, as we tend",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 57.2,
+      "end_time": 60.080000000000005,
+      "content_type": "speech_to_text",
+      "content": " to compare ourselves against where we started.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 60.080000000000005,
+      "end_time": 65.12,
+      "content_type": "speech_to_text",
+      "content": " For example, when someone starts training for a marathon, accomplishing even a short jog",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 65.12,
+      "end_time": 67.24000000000001,
+      "content_type": "speech_to_text",
+      "content": " can feel motivating.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 67.24000000000001,
+      "end_time": 72.04,
+      "content_type": "speech_to_text",
+      "content": " But the longer you work on something, the more likely it is that your focus shifts to",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 72.04,
+      "end_time": 73.92,
+      "content_type": "speech_to_text",
+      "content": " your end goal.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 73.92,
+      "end_time": 79.0,
+      "content_type": "speech_to_text",
+      "content": " In other words, rather than seeing how far you've come, it's easy to become frustrated",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 79.0,
+      "end_time": 81.80000000000001,
+      "content_type": "speech_to_text",
+      "content": " by how far you still need to go.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 81.80000000000001,
+      "end_time": 87.12,
+      "content_type": "speech_to_text",
+      "content": " A simple way to avoid these motivational sinkholes is to break your pursuits into smaller,",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 87.12,
+      "end_time": 90.04,
+      "content_type": "speech_to_text",
+      "content": " more achievable, sub-goals.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 90.04,
+      "end_time": 95.2,
+      "content_type": "speech_to_text",
+      "content": " This creates less daunting incremental benchmarks to compare your progress to.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 95.2,
+      "end_time": 99.92,
+      "content_type": "speech_to_text",
+      "content": " It also creates more opportunities to celebrate wins along the way.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 99.92,
+      "end_time": 105.76,
+      "content_type": "speech_to_text",
+      "content": " This is especially important when working towards bigger societal goals.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 105.76,
+      "end_time": 109.56,
+      "content_type": "speech_to_text",
+      "content": " These issues are by nature large scale and complex.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 109.56,
+      "end_time": 112.96000000000001,
+      "content_type": "speech_to_text",
+      "content": " No single action or person is likely to solve them.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 112.96,
+      "end_time": 118.8,
+      "content_type": "speech_to_text",
+      "content": " So if you only focus on the end goal, it's easy to feel personally powerless.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 118.8,
+      "end_time": 123.88,
+      "content_type": "speech_to_text",
+      "content": " And the enormity of these problems may be why so many people, including those who care",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 123.88,
+      "end_time": 130.35999999999999,
+      "content_type": "speech_to_text",
+      "content": " deeply about the issues, think that progress is impossible, leading them to disengage.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 130.35999999999999,
+      "end_time": 137.56,
+      "content_type": "speech_to_text",
+      "content": " In fact, one 2021 global survey of young people found that over half believed humanity",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 137.56,
+      "end_time": 138.92,
+      "content_type": "speech_to_text",
+      "content": " is doomed.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 138.92,
+      "end_time": 146.67999999999998,
+      "content_type": "speech_to_text",
+      "content": " But despite these obstacles, some people do manage to stay motivated, engaged, and unstuck.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 146.67999999999998,
+      "end_time": 148.76,
+      "content_type": "speech_to_text",
+      "content": " So how do they do it?",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 148.76,
+      "end_time": 153.72,
+      "content_type": "speech_to_text",
+      "content": " Surprisingly, it's not all about how concerned you are or how much you care about the issue",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 153.72,
+      "end_time": 155.0,
+      "content_type": "speech_to_text",
+      "content": " in front of you.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 155.0,
+      "end_time": 159.56,
+      "content_type": "speech_to_text",
+      "content": " For instance, research has found that among those who feel the most alarmed about climate",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 159.56,
+      "end_time": 164.0,
+      "content_type": "speech_to_text",
+      "content": " change, only about a third take regular climate action.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 164.0,
+      "end_time": 169.64,
+      "content_type": "speech_to_text",
+      "content": " However, a unifying factor among those who do take action is the confidence that their",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 169.64,
+      "end_time": 172.88,
+      "content_type": "speech_to_text",
+      "content": " personal involvement could make a difference.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 172.88,
+      "end_time": 175.4,
+      "content_type": "speech_to_text",
+      "content": " And this belief isn't misguided.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 175.4,
+      "end_time": 180.8,
+      "content_type": "speech_to_text",
+      "content": " The long history of social progress proves that change is possible, and individual actions",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 180.8,
+      "end_time": 186.6,
+      "content_type": "speech_to_text",
+      "content": " whether it's volunteering, voting, protesting, or personally contributing to a communal goal",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 186.6,
+      "end_time": 193.4,
+      "content_type": "speech_to_text",
+      "content": " are key to building the collective momentum that has tackled seemingly impenetrable issues.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 193.4,
+      "end_time": 196.96,
+      "content_type": "speech_to_text",
+      "content": " It's not to say that concern and passion have no place.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 196.96,
+      "end_time": 201.4,
+      "content_type": "speech_to_text",
+      "content": " Moral outrage or anger can help us focus on what's at stake.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 201.4,
+      "end_time": 206.04000000000002,
+      "content_type": "speech_to_text",
+      "content": " And when it's correctly harnessed, outrage can be a powerful unifier.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 206.04000000000002,
+      "end_time": 211.6,
+      "content_type": "speech_to_text",
+      "content": " In the American Civil Rights Movement, shared anger over systemic racism, injustice, and",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 211.6,
+      "end_time": 216.48000000000002,
+      "content_type": "speech_to_text",
+      "content": " violence against black people galvanized diverse communities to work together in the fight",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 216.48000000000002,
+      "end_time": 218.20000000000002,
+      "content_type": "speech_to_text",
+      "content": " for equality.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 218.20000000000002,
+      "end_time": 222.8,
+      "content_type": "speech_to_text",
+      "content": " And bringing together people of different backgrounds and mindsets is essential to building",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 222.8,
+      "end_time": 226.12,
+      "content_type": "speech_to_text",
+      "content": " longevity and resilience in any movement.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 226.12,
+      "end_time": 230.76000000000002,
+      "content_type": "speech_to_text",
+      "content": " In this way, thinking about how you can apply your own unique perspective, knowledge, and",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 230.76000000000002,
+      "end_time": 234.48000000000002,
+      "content_type": "speech_to_text",
+      "content": " expertise to promoting change can be helpful.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 234.48000000000002,
+      "end_time": 238.0,
+      "content_type": "speech_to_text",
+      "content": " And finding community has plenty of other benefits.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 238.0,
+      "end_time": 242.4,
+      "content_type": "speech_to_text",
+      "content": " Just witnessing other people at work has been shown to motivate personal action, creating",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 242.4,
+      "end_time": 245.36,
+      "content_type": "speech_to_text",
+      "content": " a positive feedback loop.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 245.36,
+      "end_time": 249.68,
+      "content_type": "speech_to_text",
+      "content": " Collaboration can help you better problem solve when you're unsure what the next step is,",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 249.68,
+      "end_time": 254.8,
+      "content_type": "speech_to_text",
+      "content": " to support an encouragement of others can serve as a source of inspiration and joy if you're",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 254.8,
+      "end_time": 258.32,
+      "content_type": "speech_to_text",
+      "content": " feeling exhausted, defeated, or stuck.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 258.32,
+      "end_time": 263.52,
+      "content_type": "speech_to_text",
+      "content": " The path to conquering any goal is long and bound to hit sticking points.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 263.52,
+      "end_time": 268.36,
+      "content_type": "speech_to_text",
+      "content": " Often the best way to get unstuck is just to take any action, no matter how small or",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 268.36,
+      "end_time": 270.32,
+      "content_type": "speech_to_text",
+      "content": " imperfect the outcome.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 270.32,
+      "end_time": 275.6,
+      "content_type": "speech_to_text",
+      "content": " Progress starts with writing that next sentence, running that extra mile, or even casting",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 275.6,
+      "end_time": 280.08000000000004,
+      "content_type": "speech_to_text",
+      "content": " that vote to build a better future.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 280.08000000000004,
+      "end_time": 282.84000000000003,
+      "content_type": "speech_to_text",
+      "content": " Need an extra push to get unstuck with your climate goals?",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 282.84000000000003,
+      "end_time": 284.56,
+      "content_type": "speech_to_text",
+      "content": " Ted countdown is here to help.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 284.56,
+      "end_time": 288.68,
+      "content_type": "speech_to_text",
+      "content": " Countdown is a global initiative aimed at turning innovative solutions into planet-saving",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 288.68,
+      "end_time": 289.68,
+      "content_type": "speech_to_text",
+      "content": " realities.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 289.68,
+      "end_time": 294.56,
+      "content_type": "speech_to_text",
+      "content": " Learn how you can be part of building a cleaner future at countdown.ted.com.",
+      "metadata": {
+        "source": "whisper",
+        "confidence": 0.8
+      },
+      "confidence": 0.8
+    },
+    {
+      "start_time": 0,
+      "end_time": 300,
+      "content_type": "metadata",
+      "content": "Title: Why you feel stuck \u2014 and how to get motivated - Shannon Odell\nDuration: 300 seconds",
+      "metadata": {
+        "source": "video_metadata",
+        "title": "Why you feel stuck \u2014 and how to get motivated - Shannon Odell",
+        "duration": 300
+      },
+      "confidence": 1.0
+    }
+  ],
+  "frames_extracted": 0,
+  "frame_descriptions": [],
+  "processed_at": "2025-06-09T08:11:04.411686",
   "status": "completed"
 }

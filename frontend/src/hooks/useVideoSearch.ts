@@ -42,12 +42,25 @@ export const useVideoSearch = (): UseVideoSearchReturn => {
       processedVideo: processedVideo ? {
         video_id: processedVideo.video_id,
         status: processedVideo.status,
-        hasVideoInfo: !!processedVideo.video_info
+        hasMetadata: !!processedVideo.metadata
       } : null,
       isSearchEnabled,
       hasError: !!error
     });
   }, [isProcessing, isSearching, processedVideo, error, isSearchEnabled]);
+
+  // Add more detailed logging for search results
+  useEffect(() => {
+    if (searchResults) {
+      console.log('useVideoSearch: Search results updated:', {
+        query: searchResults.query,
+        searchType: searchResults.search_type,
+        resultsCount: searchResults.results?.length || 0,
+        hasResults: !!searchResults.results?.length,
+        responseTime: searchResults.response_time
+      });
+    }
+  }, [searchResults]);
 
   const processVideo = useCallback(async (request: ProcessVideoRequest) => {
     console.log('Starting video processing with request:', request);
@@ -67,15 +80,15 @@ export const useVideoSearch = (): UseVideoSearchReturn => {
       if (!result.video_id) {
         throw new Error('Invalid response: Missing video_id');
       }
-      if (!result.video_info) {
-        throw new Error('Invalid response: Missing video_info');
+      if (!result.metadata) {
+        throw new Error('Invalid response: Missing metadata');
       }
       
       // Update state with validated response
       console.log('Setting processed video state with:', {
         video_id: result.video_id,
         status: result.status,
-        hasVideoInfo: !!result.video_info
+        hasMetadata: !!result.metadata
       });
       setProcessedVideo(result);
       
@@ -108,42 +121,68 @@ export const useVideoSearch = (): UseVideoSearchReturn => {
   }, []);
 
   const searchVideo = useCallback(async (request: SearchRequest) => {
-    console.log('Starting video search with request:', request);
+    console.log('useVideoSearch: Starting video search with request:', request);
     setIsSearching(true);
     setError(null);
+    setSearchResults(null); // Clear previous results
     
     try {
-      console.log('Making API call to search video...');
+      console.log('useVideoSearch: Making API call to search video...');
       const result = await VideoApi.searchVideo(request);
-      console.log('Search API response received:', result);
-      setSearchResults(result);
-      console.log('Search results state updated:', result);
+      console.log('useVideoSearch: Raw API response:', result);
+      
+      // Transform the response to match our expected format
+      const transformedResult = {
+        ...result,
+        sources: result.sources || result.results || [],
+        answer: result.answer || result.text || ''
+      };
+      console.log('useVideoSearch: Transformed response:', transformedResult);
+      
+      setSearchResults(transformedResult);
     } catch (err) {
-      console.error('Search failed:', err);
+      console.error('useVideoSearch: Search failed:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
+      setSearchResults(null);
     } finally {
       setIsSearching(false);
-      console.log('Search complete, setting isSearching to false');
+      console.log('useVideoSearch: Search complete, setting isSearching to false');
     }
   }, []);
 
   const searchVisualContent = useCallback(async (request: SearchRequest) => {
-    console.log('Starting visual search with request:', request);
+    console.log('useVideoSearch: Starting visual search with request:', request);
     setIsSearching(true);
     setError(null);
+    setSearchResults(null); // Clear previous results
     
     try {
-      console.log('Making API call to search visual content...');
-      const result = await VideoApi.searchVisualContent(request);
-      console.log('Visual search API response received:', result);
-      setSearchResults(result);
-      console.log('Visual search results state updated:', result);
+      // Ensure search_type is set to 'visual'
+      const visualRequest = {
+        ...request,
+        search_type: 'visual' as const
+      };
+      
+      console.log('useVideoSearch: Making API call to search visual content...', visualRequest);
+      const result = await VideoApi.searchVisualContent(visualRequest);
+      console.log('useVideoSearch: Raw visual search response:', result);
+      
+      // Transform the response to match our expected format
+      const transformedResult = {
+        ...result,
+        sources: result.sources || result.results || [],
+        answer: result.answer || result.text || ''
+      };
+      console.log('useVideoSearch: Transformed visual response:', transformedResult);
+      
+      setSearchResults(transformedResult);
     } catch (err) {
-      console.error('Visual search failed:', err);
+      console.error('useVideoSearch: Visual search failed:', err);
       setError(err instanceof Error ? err.message : 'Visual search failed');
+      setSearchResults(null);
     } finally {
       setIsSearching(false);
-      console.log('Visual search complete, setting isSearching to false');
+      console.log('useVideoSearch: Visual search complete, setting isSearching to false');
     }
   }, []);
 
