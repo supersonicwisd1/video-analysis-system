@@ -10,7 +10,7 @@ class ProcessingOptions(BaseModel):
     preload_segments: bool = True
     max_parallel_tasks: int = Field(default=3, ge=1, le=10)
     extract_frames: bool = True
-    max_duration: int = Field(default=300, description="Maximum video duration to process (seconds)")
+    max_duration: int = Field(default=1000, description="Maximum video duration to process (seconds)")
 
 class ProcessVideoRequest(BaseModel):
     """Request model for processing a single video"""

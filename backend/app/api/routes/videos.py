@@ -12,7 +12,9 @@ from app.api.models.responses import (
     BatchProcessingResponse,
     VideoInfoResponse,
     ProcessingStatusResponse,
-    VideoMetadata
+    VideoMetadata,
+    VideoSection,
+    VideoSegment
 )
 import re
 from datetime import datetime
@@ -50,6 +52,26 @@ async def process_video(
         cached_metadata = await cache.get_video_metadata(video_id)
         if cached_metadata:
             # Convert cached metadata to VideoMetadata model
+            sections = []
+            for section in cached_metadata.get("sections", []):
+                if isinstance(section, dict):
+                    # Ensure section has required fields
+                    if "id" not in section:
+                        section["id"] = str(uuid.uuid4())
+                    sections.append(VideoSection(**section))
+                else:
+                    sections.append(section)
+
+            segments = []
+            for segment in cached_metadata.get("segments", []):
+                if isinstance(segment, dict):
+                    # Ensure segment has required fields
+                    if "segment_type" not in segment:
+                        segment["segment_type"] = "transcript"  # Default to transcript type
+                    segments.append(VideoSegment(**segment))
+                else:
+                    segments.append(segment)
+
             metadata = VideoMetadata(
                 video_id=video_id,
                 title=cached_metadata.get("title", "Unknown"),
@@ -58,8 +80,8 @@ async def process_video(
                 processed_at=cached_metadata.get("processed_at", datetime.now()),
                 status="completed",
                 quality=cached_metadata.get("quality", "auto"),
-                sections=cached_metadata.get("sections", []),
-                segments=cached_metadata.get("segments", []),
+                sections=sections,
+                segments=segments,
                 frame_count=cached_metadata.get("frame_count"),
                 error=cached_metadata.get("error")
             )
@@ -285,5 +307,116 @@ async def get_video_segments(
             "cached": False
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{video_id}/sections", response_model=List[VideoSection])
+async def get_video_sections(
+    video_id: str,
+    cache: VideoCache = Depends(get_cache)
+):
+    """Get video sections"""
+    try:
+        metadata = await cache.get_video_metadata(video_id)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        return metadata.get("sections", [])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{video_id}/sections", response_model=VideoSection)
+async def create_video_section(
+    video_id: str,
+    section: VideoSection,
+    processor: VideoRAGProcessor = Depends(get_video_processor),
+    cache: VideoCache = Depends(get_cache)
+):
+    """Create a new video section"""
+    try:
+        metadata = await cache.get_video_metadata(video_id)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        # Validate section timing
+        if section.start_time < 0 or section.end_time > metadata["duration"]:
+            raise HTTPException(status_code=400, detail="Invalid section timing")
+        
+        # Add section
+        sections = metadata.get("sections", [])
+        sections.append(section)
+        
+        # Update metadata
+        metadata["sections"] = sections
+        await cache.set_video_metadata(video_id, metadata)
+        
+        return section
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/{video_id}/sections/{section_id}", response_model=VideoSection)
+async def update_video_section(
+    video_id: str,
+    section_id: str,
+    section_update: VideoSection,
+    cache: VideoCache = Depends(get_cache)
+):
+    """Update a video section"""
+    try:
+        metadata = await cache.get_video_metadata(video_id)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        sections = metadata.get("sections", [])
+        section_index = next((i for i, s in enumerate(sections) if s["id"] == section_id), None)
+        
+        if section_index is None:
+            raise HTTPException(status_code=404, detail="Section not found")
+        
+        # Validate section timing
+        if section_update.start_time < 0 or section_update.end_time > metadata["duration"]:
+            raise HTTPException(status_code=400, detail="Invalid section timing")
+        
+        # Update section
+        sections[section_index] = section_update.dict()
+        metadata["sections"] = sections
+        await cache.set_video_metadata(video_id, metadata)
+        
+        return section_update
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{video_id}/sections/{section_id}")
+async def delete_video_section(
+    video_id: str,
+    section_id: str,
+    cache: VideoCache = Depends(get_cache)
+):
+    """Delete a video section"""
+    try:
+        metadata = await cache.get_video_metadata(video_id)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        sections = metadata.get("sections", [])
+        section_index = next((i for i, s in enumerate(sections) if s["id"] == section_id), None)
+        
+        if section_index is None:
+            raise HTTPException(status_code=404, detail="Section not found")
+        
+        # Remove section
+        sections.pop(section_index)
+        metadata["sections"] = sections
+        await cache.set_video_metadata(video_id, metadata)
+        
+        return {"status": "success", "message": "Section deleted"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

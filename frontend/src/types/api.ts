@@ -69,3 +69,21 @@ export interface ApiError {
   detail: string;
   status_code?: number;
 }
+
+export interface VideoSection {
+  id: string;
+  title: string;
+  start_time: number;
+  end_time: number;
+  description?: string;
+  type: 'auto' | 'manual' | 'youtube' | 'gap';
+  confidence: number;
+  metadata?: {
+    segment_count?: number;
+    content_types?: string[];
+    is_gap?: boolean;
+    merged_sections?: number;
+    chapter_index?: number;
+    [key: string]: any;
+  };
+}

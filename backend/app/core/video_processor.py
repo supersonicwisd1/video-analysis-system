@@ -22,6 +22,8 @@ import asyncio
 import uuid
 from .cache import VideoCache
 from .websocket import manager
+from app.api.models.responses import VideoSection as APIVideoSection
+from app.api.models.responses import VideoSection
 
 # LlamaIndex imports
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings
@@ -75,6 +77,31 @@ class ProcessingTask:
         self.error = None
         self.result = None
 
+@dataclass
+class VideoSection:
+    """Video section with JSON serialization support"""
+    id: str
+    title: str
+    start_time: float
+    end_time: float
+    description: Optional[str]
+    type: str
+    confidence: float
+    metadata: Optional[Dict[str, Any]]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization"""
+        return {
+            "id": self.id,
+            "title": self.title,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "description": self.description,
+            "type": self.type,
+            "confidence": self.confidence,
+            "metadata": self.metadata or {}
+        }
+
 class VideoRAGProcessor:
     """Production video RAG processor with hybrid processing and caching"""
     
@@ -92,6 +119,7 @@ class VideoRAGProcessor:
         self.openai_client = None
         self.whisper_model = None
         self.active_indices: Dict[str, Any] = {}  # video_id -> query_engine
+        self.processing_tasks: Dict[str, Dict[str, ProcessingTask]] = {}  # video_id -> {task_type -> task}
         
         # Initialize ChromaDB early
         try:
@@ -118,7 +146,6 @@ class VideoRAGProcessor:
         if not self._check_ffmpeg():
             raise RuntimeError("FFmpeg is required but not found. Please install FFmpeg first.")
         
-        self.processing_tasks: Dict[str, ProcessingTask] = {}
         self.task_semaphore = asyncio.Semaphore(3)  # Limit concurrent tasks
         self.quality_settings = {
             'high': {'height': 1080, 'fps': 30},
@@ -181,6 +208,7 @@ class VideoRAGProcessor:
         if not self.chroma_client:
             raise RuntimeError("ChromaDB client not initialized")
             
+        video_id = None
         try:
             video_id = extract_video_id(youtube_url)
             if not video_id:
@@ -203,39 +231,120 @@ class VideoRAGProcessor:
                     "videos": {video_id: "processing"}
                 })
 
-            # Create processing tasks
-            tasks = []
-            if parallel:
-                # Create parallel tasks
-                transcript_task = ProcessingTask(video_id, "transcript")
-                visual_task = ProcessingTask(video_id, "visual") if include_frames else None
-                metadata_task = ProcessingTask(video_id, "metadata")
-
-                tasks = [t for t in [transcript_task, visual_task, metadata_task] if t]
-                self.processing_tasks[video_id] = {t.task_type: t for t in tasks}
-
-                # Process tasks in parallel with semaphore
-                async with asyncio.TaskGroup() as tg:
-                    for task in tasks:
-                        tg.create_task(self._process_task(task, quality, max_duration))
-
-            else:
-                # Sequential processing
-                await self._process_video_sequential(video_id, quality, include_frames, max_duration)
-
-            # Download video with quality settings
+            # Download video first
+            print(f"📥 Downloading video {video_id}...")
             video_data = await self._download_video_for_frames(youtube_url, quality, max_duration)
             if not video_data:
                 raise ValueError("Failed to download video")
+            print(f"✅ Video downloaded: {video_data['title']}")
+
+            # Validate video data
+            if not video_data.get('title') or not video_data.get('duration'):
+                raise ValueError("Invalid video data: missing title or duration")
+
+            # Save video info immediately after download
+            initial_metadata = {
+                "video_id": video_id,
+                "youtube_url": youtube_url,
+                "video_info": video_data,
+                "status": "downloaded",
+                "quality": quality,
+                "processed_at": datetime.now().isoformat(),
+                "title": video_data['title'],
+                "duration": float(video_data['duration'])
+            }
+            await self._save_metadata(video_id, initial_metadata)
+
+            # Process metadata first
+            print("🔄 Processing metadata...")
+            try:
+                metadata_segment = await self._process_metadata_task(video_id)
+                if not metadata_segment:
+                    raise ValueError("Failed to process metadata")
+            except Exception as e:
+                print(f"❌ Metadata processing failed: {e}")
+                # Save error state
+                error_metadata = {
+                    "video_id": video_id,
+                    "youtube_url": youtube_url,
+                    "video_info": video_data,
+                    "status": "failed",
+                    "error": str(e),
+                    "processed_at": datetime.now().isoformat(),
+                    "title": video_data['title'],
+                    "duration": float(video_data['duration'])
+                }
+                await self._save_metadata(video_id, error_metadata)
+                await self.cache.set_processing_status(str(video_id), "failed")
+                raise
+
+            # Create processing tasks for transcript and visual
+            tasks = []
+            if parallel:
+                # Create parallel tasks for transcript and visual only
+                transcript_task = ProcessingTask(video_id, "transcript")
+                visual_task = ProcessingTask(video_id, "visual") if include_frames else None
+
+                tasks = [t for t in [transcript_task, visual_task] if t]
+                self.processing_tasks[video_id] = {t.task_type: t for t in tasks}
+
+                # Process tasks in parallel with semaphore
+                try:
+                    async with asyncio.TaskGroup() as tg:
+                        for task in tasks:
+                            tg.create_task(self._process_task(task, quality, max_duration))
+                except* Exception as e:
+                    print(f"❌ Task group failed: {e}")
+                    # Save error state but continue with any successful tasks
+                    error_metadata = {
+                        "video_id": video_id,
+                        "youtube_url": youtube_url,
+                        "video_info": video_data,
+                        "status": "failed",
+                        "error": f"Task group failed: {str(e)}",
+                        "processed_at": datetime.now().isoformat(),
+                        "title": video_data['title'],
+                        "duration": float(video_data['duration'])
+                    }
+                    await self._save_metadata(video_id, error_metadata)
+                    await self.cache.set_processing_status(str(video_id), "failed")
+                    raise
+
+            else:
+                # Sequential processing for transcript and visual
+                try:
+                    transcript_segments = await self._process_transcript_task(video_id, quality)
+                    visual_segments = []
+                    if include_frames:
+                        visual_segments = await self._process_visual_task(video_id, quality)
+                    segments = transcript_segments + visual_segments
+                except Exception as e:
+                    print(f"❌ Sequential processing failed: {e}")
+                    error_metadata = {
+                        "video_id": video_id,
+                        "youtube_url": youtube_url,
+                        "video_info": video_data,
+                        "status": "failed",
+                        "error": str(e),
+                        "processed_at": datetime.now().isoformat(),
+                        "title": video_data['title'],
+                        "duration": float(video_data['duration'])
+                    }
+                    await self._save_metadata(video_id, error_metadata)
+                    await self.cache.set_processing_status(str(video_id), "failed")
+                    raise
 
             # Get processing results
-            segments = []
+            segments = [metadata_segment]  # Start with metadata segment
             if parallel:
                 for task in tasks:
                     if task.result:
-                        segments.extend(task.result)
+                        if isinstance(task.result, list):
+                            segments.extend(task.result)
+                        else:
+                            segments.append(task.result)
             else:
-                segments = await self._get_processed_segments(video_id)
+                segments.extend(segments)  # Add segments from sequential processing
 
             # Create section breakdown
             sections = self._create_section_breakdown(segments)
@@ -244,8 +353,8 @@ class VideoRAGProcessor:
             query_engine = await self._create_hybrid_index(video_id, segments)
             self.active_indices[video_id] = query_engine
 
-            # Save metadata
-            metadata = {
+            # Update metadata with processing results
+            final_metadata = {
                 "video_id": video_id,
                 "youtube_url": youtube_url,
                 "video_info": video_data,
@@ -253,11 +362,13 @@ class VideoRAGProcessor:
                 "segments": [s.to_dict() for s in segments],
                 "processed_at": datetime.now().isoformat(),
                 "status": "completed",
-                "quality": quality
+                "quality": quality,
+                "title": video_data['title'],
+                "duration": float(video_data['duration'])
             }
 
             # Save to storage and cache
-            await self._save_metadata(video_id, metadata)
+            await self._save_metadata(video_id, final_metadata)
             await self.cache.set_processing_status(str(video_id), "completed")
 
             if batch_id:
@@ -274,15 +385,35 @@ class VideoRAGProcessor:
             await manager.broadcast_to_video(video_id, {
                 "type": "processing_complete",
                 "video_id": video_id,
-                "metadata": metadata
+                "metadata": final_metadata
             })
 
-            return metadata
+            return final_metadata
 
         except Exception as e:
             print(f"❌ Video processing failed: {e}")
             if video_id:
                 await self.cache.set_processing_status(str(video_id), "failed")
+                # Save error metadata
+                error_metadata = {
+                    "video_id": video_id,
+                    "youtube_url": youtube_url,
+                    "status": "failed",
+                    "error": str(e),
+                    "processed_at": datetime.now().isoformat()
+                }
+                # Try to get video info if available
+                try:
+                    video_info = await self.get_video_info(video_id)
+                    if video_info and 'video_info' in video_info:
+                        error_metadata.update({
+                            "video_info": video_info['video_info'],
+                            "title": video_info['video_info'].get('title', 'Unknown'),
+                            "duration": float(video_info['video_info'].get('duration', 0))
+                        })
+                except:
+                    pass
+                await self._save_metadata(video_id, error_metadata)
             if batch_id:
                 await self.cache.set_batch_status(batch_id, {
                     "status": "failed",
@@ -295,103 +426,115 @@ class VideoRAGProcessor:
         """Search within a processed video with streaming response"""
         print(f"🔍 Searching video {video_id} for: {query} (type: {search_type})")
         
-        # First check if video exists in storage
-        metadata = await self.get_video_info(video_id)
-        if not metadata:
-            print(f"❌ Video {video_id} not found in storage")
-            raise ValueError(f"Video {video_id} not found or not processed")
-        
-        # Check if index exists in memory
-        if video_id not in self.active_indices:
-            print(f"🔄 Loading index for video {video_id}...")
-            # Try to load from storage
-            if not await self._load_video_index(video_id):
-                print(f"❌ Failed to load index for video {video_id}")
-                raise ValueError(f"Video {video_id} index not found")
-            print(f"✅ Index loaded for video {video_id}")
-        
-        query_engine = self.active_indices[video_id]
-        if not query_engine:
-            print(f"❌ No query engine found for video {video_id}")
-            raise ValueError(f"Video {video_id} search engine not initialized")
-        
         try:
-            print(f"🔄 Executing search query: {query}")
-            # Execute search with streaming
-            response = await query_engine.aquery(query)
-            print("✅ Search query executed")
-            print(f"📝 Raw response: {response}")
+            # First check if video exists in storage
+            metadata = await self.get_video_info(video_id)
+            if not metadata:
+                print(f"❌ Video {video_id} not found in storage")
+                raise ValueError(f"Video {video_id} not found or not processed")
             
-            # Extract sources with enhanced metadata
-            sources = []
-            if hasattr(response, 'source_nodes'):
-                print(f"📚 Found {len(response.source_nodes)} source nodes")
-                for i, node in enumerate(response.source_nodes[:3]):
-                    print(f"\nSource node {i+1}:")
-                    print(f"Text: {node.text[:200]}...")
-                    print(f"Metadata: {node.metadata}")
-                    
-                    if not node.metadata:
-                        print("⚠️ Node has no metadata, skipping")
-                        continue
+            # Check if index exists in memory
+            if video_id not in self.active_indices:
+                print(f"🔄 Loading index for video {video_id}...")
+                # Try to load from storage
+                if not await self._load_video_index(video_id):
+                    print(f"❌ Failed to load index for video {video_id}")
+                    raise ValueError(f"Video {video_id} index not found")
+                print(f"✅ Index loaded for video {video_id}")
+            
+            query_engine = self.active_indices.get(video_id)
+            if not query_engine:
+                print(f"❌ No query engine found for video {video_id}")
+                raise ValueError(f"Video {video_id} search engine not initialized")
+            
+            try:
+                print(f"🔄 Executing search query: {query}")
+                # Execute search with streaming
+                response = await query_engine.aquery(query)
+                print("✅ Search query executed")
+                
+                # Extract sources with enhanced metadata
+                sources = []
+                if hasattr(response, 'source_nodes') and response.source_nodes:
+                    print(f"📚 Found {len(response.source_nodes)} source nodes")
+                    for i, node in enumerate(response.source_nodes[:3]):
+                        if not node or not node.metadata:
+                            continue
+                            
+                        print(f"\nSource node {i+1}:")
+                        print(f"Text: {node.text[:200]}...")
+                        print(f"Metadata: {node.metadata}")
                         
-                    metadata = node.metadata
-                    source_type = metadata.get("source_type", "unknown")
-                    
-                    # Filter based on search type
-                    if search_type == "transcript" and source_type == "metadata":
-                        print(f"Skipping source of type {source_type} (search type: {search_type})")
-                        continue
-                    elif search_type == "visual" and source_type != "video_frame":
-                        print(f"Skipping source of type {source_type} (search type: {search_type})")
-                        continue
-                    elif search_type == "hybrid" and source_type not in ["speech_to_text", "video_frame"]:
-                        print(f"Skipping source of type {source_type} (search type: {search_type})")
-                        continue
-                    
-                    # Format timestamp
-                    start_time = float(metadata.get("start_time", 0))
-                    end_time = float(metadata.get("end_time", 0))
-                    start_fmt = f"{int(start_time//60):02d}:{int(start_time%60):02d}"
-                    end_fmt = f"{int(end_time//60):02d}:{int(end_time%60):02d}"
-                    
-                    # Create source info
-                    source_info = {
-                        "text": node.text[:200] + "..." if len(node.text) > 200 else node.text,
-                        "timestamp": start_time,
-                        "end_time": end_time,
-                        "youtube_link": f"https://www.youtube.com/watch?v={video_id}&t={int(start_time)}s",
-                        "confidence": float(metadata.get("confidence", 1.0)),
-                        "source_type": source_type,
-                        "timestamp_formatted": f"{start_fmt} - {end_fmt}"
+                        metadata = node.metadata
+                        source_type = metadata.get("source_type", "unknown")
+                        
+                        # Filter based on search type
+                        if search_type == "transcript" and source_type == "metadata":
+                            print(f"Skipping source of type {source_type} (search type: {search_type})")
+                            continue
+                        elif search_type == "visual" and source_type != "video_frame":
+                            print(f"Skipping source of type {source_type} (search type: {search_type})")
+                            continue
+                        elif search_type == "hybrid" and source_type not in ["speech_to_text", "video_frame"]:
+                            print(f"Skipping source of type {source_type} (search type: {search_type})")
+                            continue
+                        
+                        try:
+                            # Format timestamp
+                            start_time = float(metadata.get("start_time", 0))
+                            end_time = float(metadata.get("end_time", 0))
+                            start_fmt = f"{int(start_time//60):02d}:{int(start_time%60):02d}"
+                            end_fmt = f"{int(end_time//60):02d}:{int(end_time%60):02d}"
+                            
+                            # Create source info
+                            source_info = {
+                                "text": node.text[:200] + "..." if len(node.text) > 200 else node.text,
+                                "timestamp": start_time,
+                                "end_time": end_time,
+                                "youtube_link": f"https://www.youtube.com/watch?v={video_id}&t={int(start_time)}s",
+                                "confidence": float(metadata.get("confidence", 1.0)),
+                                "source_type": source_type,
+                                "timestamp_formatted": f"{start_fmt} - {end_fmt}"
+                            }
+                            sources.append(source_info)
+                            print(f"Processed source: {source_info}")
+                        except (ValueError, TypeError) as e:
+                            print(f"⚠️ Error processing source node {i+1}: {e}")
+                            continue
+                else:
+                    print("⚠️ No source nodes found in response")
+                
+                # Store in chat history if conversation_id provided
+                if conversation_id:
+                    message = {
+                        "query": query,
+                        "response": str(response),
+                        "sources": sources,
+                        "timestamp": datetime.utcnow().isoformat()
                     }
-                    sources.append(source_info)
-                    print(f"Processed source: {source_info}")
-            else:
-                print("⚠️ No source nodes found in response")
-            
-            # Store in chat history if conversation_id provided
-            if conversation_id:
-                message = {
+                    await self.cache.append_chat_message(video_id, conversation_id, message)
+                
+                # Stream response
+                result = {
+                    "type": "search_result",
                     "query": query,
-                    "response": str(response),
+                    "answer": str(response),
                     "sources": sources,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "video_id": video_id,
+                    "search_type": search_type
                 }
-                await self.cache.append_chat_message(video_id, conversation_id, message)
-            
-            # Stream response
-            result = {
-                "type": "search_result",
-                "query": query,
-                "answer": str(response),
-                "sources": sources,
-                "video_id": video_id,
-                "search_type": search_type
-            }
-            print(f"📤 Sending search result: {result}")
-            yield result
-            
+                print(f"📤 Sending search result: {result}")
+                yield result
+                
+            except Exception as e:
+                print(f"❌ Search query failed: {e}")
+                error_result = {
+                    "type": "error",
+                    "error": str(e)
+                }
+                print(f"📤 Sending error result: {error_result}")
+                yield error_result
+                
         except Exception as e:
             print(f"❌ Search failed: {e}")
             error_result = {
@@ -400,15 +543,67 @@ class VideoRAGProcessor:
             }
             print(f"📤 Sending error result: {error_result}")
             yield error_result
-            raise
     
     async def get_video_info(self, video_id: str) -> Optional[Dict]:
-        """Get video metadata"""
-        metadata_file = self.storage_path / f"{video_id}_metadata.json"
-        if metadata_file.exists():
-            with open(metadata_file, 'r') as f:
-                return json.load(f)
-        return None
+        """Get video metadata with validation"""
+        try:
+            metadata_file = self.storage_path / f"{video_id}_metadata.json"
+            if not metadata_file.exists():
+                print(f"❌ Metadata file not found for video {video_id}")
+                return None
+
+            # Read and validate JSON
+            try:
+                with open(metadata_file, 'r') as f:
+                    content = f.read().strip()
+                    if not content:
+                        print(f"❌ Empty metadata file for video {video_id}")
+                        return None
+                    
+                    # Try to parse JSON
+                    try:
+                        metadata = json.loads(content)
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Invalid JSON in metadata file for video {video_id}: {e}")
+                        # Try to fix truncated JSON
+                        if content.endswith(','):
+                            content = content[:-1]
+                        if not content.endswith('}'):
+                            content += '}'
+                        try:
+                            metadata = json.loads(content)
+                        except:
+                            print(f"❌ Could not fix truncated JSON for video {video_id}")
+                            return None
+            except Exception as e:
+                print(f"❌ Error reading metadata file for video {video_id}: {e}")
+                return None
+
+            # Validate required fields
+            required_fields = ['video_id', 'youtube_url', 'video_info']
+            if not all(field in metadata for field in required_fields):
+                print(f"❌ Missing required fields in metadata for video {video_id}")
+                return None
+
+            # Validate video_info
+            video_info = metadata.get('video_info', {})
+            if not isinstance(video_info, dict):
+                print(f"❌ Invalid video_info in metadata for video {video_id}")
+                return None
+
+            # Ensure numeric fields are proper types
+            if 'duration' in video_info:
+                try:
+                    video_info['duration'] = float(video_info['duration'])
+                except (ValueError, TypeError):
+                    print(f"❌ Invalid duration in metadata for video {video_id}")
+                    return None
+
+            return metadata
+
+        except Exception as e:
+            print(f"❌ Error getting video info for {video_id}: {e}")
+            return None
     
     async def list_processed_videos(self) -> List[Dict]:
         """List all processed videos"""
@@ -535,51 +730,248 @@ class VideoRAGProcessor:
             }
         )
 
-    def _create_section_breakdown(self, segments: List[VideoSegment]) -> List[Dict[str, Any]]:
-        """Create section breakdown with timestamps"""
-        # Group segments into sections based on content type and timing
-        sections: List[Dict[str, Any]] = []
-        current_section: Optional[Dict[str, Any]] = None
-        
-        for segment in sorted(segments, key=lambda x: x.start_time):
-            if not current_section or segment.start_time - float(current_section['end_time']) > 60:
-                # Start new section
-                if current_section:
-                    sections.append(current_section)
-                
-                current_section = {
-                    'start_time': segment.start_time,
-                    'end_time': segment.end_time,
-                    'content_type': segment.content_type.value,
-                    'title': self._generate_section_title(segment),
-                    'content': segment.content[:200] + "...",
-                    'confidence': segment.confidence
-                }
-            else:
-                # Extend current section
-                current_section['end_time'] = segment.end_time
-                current_section['content'] = str(current_section['content']) + f"\n{segment.content}"
-                current_section['confidence'] = min(float(current_section['confidence']), segment.confidence)
-        
-        if current_section:
-            sections.append(current_section)
-        
-        return sections
+    def _create_section_breakdown(self, segments: List[VideoSegment]) -> List[VideoSection]:
+        """Create video sections from segments using AI analysis"""
+        try:
+            if not segments:
+                return []
 
-    def _generate_section_title(self, segment: VideoSegment) -> str:
-        """Generate a title for a section based on its content"""
-        if segment.content_type == ContentType.TRANSCRIPT:
-            # Use first sentence or first 50 chars
-            title = segment.content.split('.')[0][:50]
-        elif segment.content_type == ContentType.VISUAL:
-            # Use key visual elements
-            title = f"Visual: {segment.content.split(',')[0]}"
-        else:
-            # Use content type and timestamp
-            start_fmt = f"{int(segment.start_time//60):02d}:{int(segment.start_time%60):02d}"
-            title = f"{segment.content_type.value.title()} at {start_fmt}"
+            # Get video duration from first segment's metadata
+            video_id = segments[0].metadata.get("video_id")
+            if not video_id:
+                print("⚠️ No video ID found in segments")
+                return []
+
+            # First try to get YouTube chapters if available
+            youtube_sections = self._get_youtube_chapters(video_id)
+            if youtube_sections:
+                return youtube_sections
+
+            # Group segments into potential sections
+            section_candidates = self._group_segments_into_sections(segments)
+            
+            # Use AI to analyze and create sections
+            sections = []
+            for i, candidate in enumerate(section_candidates):
+                # Analyze content to generate title and description
+                title, description = self._analyze_section_content(candidate)
+                
+                section = VideoSection(
+                    id=str(uuid.uuid4()),
+                    title=title,
+                    start_time=float(candidate["start_time"]),
+                    end_time=float(candidate["end_time"]),
+                    description=description or "",  # Ensure description is never None
+                    type="auto",
+                    confidence=float(candidate["confidence"]),
+                    metadata={
+                        "segment_count": len(candidate["segments"]),
+                        "content_types": list(set(s.content_type.value for s in candidate["segments"]))
+                    }
+                )
+                sections.append(section)
+
+            # Merge overlapping or very close sections
+            sections = self._merge_close_sections(sections)
+            
+            # Get total duration from video info
+            video_info = self.get_video_info(video_id)
+            total_duration = float(video_info.get("video_info", {}).get("duration", 0)) if video_info else 0
+            
+            # Ensure sections cover the entire video
+            sections = self._fill_section_gaps(sections, total_duration)
+            
+            return sections
+
+        except Exception as e:
+            print(f"❌ Section creation failed: {e}")
+            return []
+
+    def _get_youtube_chapters(self, video_id: str) -> Optional[List[VideoSection]]:
+        """Extract chapters from YouTube video metadata"""
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+                info = ydl.extract_info(video_id, download=False)
+                chapters = info.get('chapters', [])
+                
+                if not chapters:
+                    return None
+                
+                return [
+                    VideoSection(
+                        id=str(uuid.uuid4()),
+                        title=chapter['title'],
+                        start_time=chapter['start_time'],
+                        end_time=chapter['end_time'],
+                        description=chapter.get('description'),
+                        type="youtube",
+                        confidence=1.0,
+                        metadata={"chapter_index": i}
+                    )
+                    for i, chapter in enumerate(chapters)
+                ]
+        except Exception as e:
+            print(f"❌ Failed to get YouTube chapters: {e}")
+            return None
+
+    def _group_segments_into_sections(self, segments: List[VideoSegment]) -> List[Dict[str, Any]]:
+        """Group segments into potential sections based on content and timing"""
+        if not segments:
+            return []
+
+        # Sort segments by start time
+        sorted_segments = sorted(segments, key=lambda x: x.start_time)
         
-        return title
+        candidates = []
+        current_candidate = {
+            "start_time": sorted_segments[0].start_time,
+            "end_time": sorted_segments[0].end_time,
+            "segments": [sorted_segments[0]],
+            "confidence": 1.0
+        }
+
+        for segment in sorted_segments[1:]:
+            # Check if segment should be part of current section
+            time_gap = segment.start_time - current_candidate["end_time"]
+            content_similarity = self._calculate_content_similarity(
+                current_candidate["segments"][-1],
+                segment
+            )
+
+            if time_gap < 30 and content_similarity > 0.5:  # Adjust thresholds as needed
+                # Extend current section
+                current_candidate["end_time"] = segment.end_time
+                current_candidate["segments"].append(segment)
+                current_candidate["confidence"] = min(
+                    current_candidate["confidence"],
+                    content_similarity
+                )
+            else:
+                # Start new section
+                candidates.append(current_candidate)
+                current_candidate = {
+                    "start_time": segment.start_time,
+                    "end_time": segment.end_time,
+                    "segments": [segment],
+                    "confidence": 1.0
+                }
+
+        # Add last candidate
+        candidates.append(current_candidate)
+        return candidates
+
+    def _calculate_content_similarity(self, seg1: VideoSegment, seg2: VideoSegment) -> float:
+        """Calculate similarity between two segments"""
+        # For now, use a simple approach based on content type
+        if seg1.content_type != seg2.content_type:
+            return 0.3  # Different content types are less likely to be in same section
+        
+        # TODO: Implement more sophisticated similarity calculation
+        # Could use embeddings or other NLP techniques
+        return 0.7  # Default similarity for same content type
+
+    def _analyze_section_content(self, candidate: Dict[str, Any]) -> tuple[str, str]:
+        """Use AI to analyze section content and generate title and description"""
+        try:
+            # Combine segment content
+            content = " ".join(s.content for s in candidate["segments"])
+            
+            # Use OpenAI to generate title and description
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that creates concise, descriptive titles and summaries for video sections."},
+                    {"role": "user", "content": f"Create a title and brief description for this video section:\n\n{content}"}
+                ],
+                temperature=0.7,
+                max_tokens=150
+            )
+            
+            # Parse response
+            result = response.choices[0].message.content.split("\n", 1)
+            title = result[0].strip()
+            description = result[1].strip() if len(result) > 1 else None
+            
+            return title, description
+
+        except Exception as e:
+            print(f"❌ Section analysis failed: {e}")
+            # Fallback to simple title
+            return f"Section {candidate['start_time']:.0f}s", None
+
+    def _merge_close_sections(self, sections: List[VideoSection]) -> List[VideoSection]:
+        """Merge sections that are too close together or overlapping"""
+        if not sections:
+            return []
+
+        merged = []
+        current = sections[0]
+
+        for next_section in sections[1:]:
+            # Check if sections should be merged
+            if (next_section.start_time - current.end_time < 10 or  # Less than 10s gap
+                next_section.start_time < current.end_time):  # Overlapping
+                
+                # Merge sections
+                current = VideoSection(
+                    id=current.id,
+                    title=f"{current.title} / {next_section.title}",
+                    start_time=current.start_time,
+                    end_time=max(current.end_time, next_section.end_time),
+                    description=f"{current.description or ''}\n{next_section.description or ''}".strip() or None,
+                    type="auto",
+                    confidence=min(current.confidence, next_section.confidence),
+                    metadata={
+                        **current.metadata,
+                        "merged_sections": current.metadata.get("merged_sections", 0) + 1
+                    }
+                )
+            else:
+                merged.append(current)
+                current = next_section
+
+        merged.append(current)
+        return merged
+
+    def _fill_section_gaps(self, sections: List[VideoSection], total_duration: float) -> List[VideoSection]:
+        """Ensure sections cover the entire video duration"""
+        if not sections:
+            return []
+
+        filled = []
+        current_time = 0.0
+
+        for section in sections:
+            # Add gap section if needed
+            if section.start_time - current_time > 30:  # Gap larger than 30s
+                filled.append(VideoSection(
+                    id=str(uuid.uuid4()),
+                    title=f"Gap {current_time:.0f}s - {section.start_time:.0f}s",
+                    start_time=current_time,
+                    end_time=section.start_time,
+                    description="",  # Empty description for gap sections
+                    type="gap",
+                    confidence=1.0,
+                    metadata={"is_gap": True}
+                ))
+            
+            filled.append(section)
+            current_time = section.end_time
+
+        # Add final gap if needed
+        if total_duration - current_time > 30:
+            filled.append(VideoSection(
+                id=str(uuid.uuid4()),
+                title=f"Gap {current_time:.0f}s - {total_duration:.0f}s",
+                start_time=current_time,
+                end_time=total_duration,
+                description="",  # Empty description for gap sections
+                type="gap",
+                confidence=1.0,
+                metadata={"is_gap": True}
+            ))
+
+        return filled
 
     async def _create_hybrid_index(self, video_id: str, segments: List[VideoSegment]) -> Any:
         """Create a hybrid RAG index from all segments"""
@@ -659,6 +1051,9 @@ class VideoRAGProcessor:
             'format': f'best[height<={settings["height"]}]',
             'outtmpl': str(self.storage_path / '%(id)s.%(ext)s'),
             'noplaylist': True,
+            'writesubtitles': True,
+            'writeautomaticsub': True,
+            'subtitleslangs': ['en'],
         }
         
         try:
@@ -666,7 +1061,7 @@ class VideoRAGProcessor:
                 info = ydl.extract_info(youtube_url, download=True)
                 
                 # Check duration
-                duration = info.get('duration', 0)
+                duration = float(info.get('duration', 0))
                 if duration > max_duration:
                     print(f"⚠️ Video duration ({duration}s) exceeds limit ({max_duration}s)")
                     return None
@@ -678,7 +1073,15 @@ class VideoRAGProcessor:
                     'duration': duration,
                     'quality': quality,
                     'height': settings['height'],
-                    'fps': settings['fps']
+                    'fps': settings['fps'],
+                    'video_id': info.get('id'),
+                    'upload_date': info.get('upload_date'),
+                    'channel': info.get('channel'),
+                    'view_count': info.get('view_count'),
+                    'like_count': info.get('like_count'),
+                    'description': info.get('description'),
+                    'thumbnail': info.get('thumbnail'),
+                    'has_subtitles': bool(info.get('subtitles') or info.get('automatic_captions'))
                 }
         except Exception as e:
             print(f"❌ Video download failed: {e}")
@@ -686,29 +1089,39 @@ class VideoRAGProcessor:
     
     async def _extract_frames_for_analysis(self, video_path: str, num_frames: int = 10) -> List[str]:
         """Extract frames from video"""
-        cap = cv2.VideoCapture(video_path)
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = frame_count / fps
-        
-        frame_paths = []
-        interval = duration / num_frames
-        
-        for i in range(num_frames):
-            timestamp = i * interval
-            frame_number = int(timestamp * fps)
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                raise ValueError("Failed to open video file")
+
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            duration = frame_count / fps if fps > 0 else 0
             
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-            ret, frame = cap.read()
+            if duration == 0:
+                raise ValueError("Invalid video duration")
+
+            frame_paths = []
+            interval = duration / num_frames
             
-            if ret:
-                frame_filename = f"frame_{i}_{int(timestamp)}.jpg"
-                frame_path = self.storage_path / frame_filename
-                cv2.imwrite(str(frame_path), frame)
-                frame_paths.append(str(frame_path))
-        
-        cap.release()
-        return frame_paths
+            for i in range(num_frames):
+                timestamp = i * interval
+                frame_number = int(timestamp * fps)
+                
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+                ret, frame = cap.read()
+                
+                if ret:
+                    frame_filename = f"frame_{i}_{int(timestamp)}.jpg"
+                    frame_path = self.storage_path / frame_filename
+                    cv2.imwrite(str(frame_path), frame)
+                    frame_paths.append(str(frame_path))
+            
+            cap.release()
+            return frame_paths
+        except Exception as e:
+            print(f"❌ Frame extraction failed: {e}")
+            return []
     
     async def _analyze_frames_with_openai(self, frame_paths: List[str], video_id: str) -> List[Dict]:
         """Analyze frames using OpenAI Vision"""
@@ -769,34 +1182,62 @@ class VideoRAGProcessor:
         return frame_descriptions
     
     async def _load_video_index(self, video_id: str) -> bool:
-        """Load video index from storage"""
+        """Load video index from storage with validation"""
         try:
             print(f"🔄 Attempting to load index for video {video_id}...")
             
-            # Check if metadata exists
+            # Check if metadata exists and is valid
             metadata = await self.get_video_info(video_id)
             if not metadata:
-                print(f"❌ No metadata found for video {video_id}")
+                print(f"❌ No valid metadata found for video {video_id}")
                 return False
             
-            # Check if segments exist
+            # Check if segments exist and are valid
             segments = metadata.get("segments", [])
-            if not segments:
-                print(f"❌ No segments found for video {video_id}")
+            if not segments or not isinstance(segments, list):
+                print(f"❌ No valid segments found for video {video_id}")
                 return False
             
-            # Convert segments back to VideoSegment objects
+            # Convert segments back to VideoSegment objects with validation
             video_segments = []
             for segment in segments:
-                video_segment = VideoSegment(
-                    start_time=segment["start_time"],
-                    end_time=segment["end_time"],
-                    content_type=ContentType(segment["content_type"]),
-                    content=segment["content"],
-                    metadata=segment["metadata"],
-                    confidence=segment["confidence"]
-                )
-                video_segments.append(video_segment)
+                try:
+                    if not isinstance(segment, dict):
+                        print(f"⚠️ Invalid segment format: {segment}")
+                        continue
+                        
+                    # Validate required fields
+                    required_fields = ['start_time', 'end_time', 'content_type', 'content']
+                    if not all(field in segment for field in required_fields):
+                        print(f"⚠️ Missing required fields in segment: {segment}")
+                        continue
+                    
+                    # Convert numeric fields
+                    try:
+                        start_time = float(segment['start_time'])
+                        end_time = float(segment['end_time'])
+                        confidence = float(segment.get('confidence', 1.0))
+                    except (ValueError, TypeError):
+                        print(f"⚠️ Invalid numeric values in segment: {segment}")
+                        continue
+                    
+                    # Create VideoSegment
+                    video_segment = VideoSegment(
+                        start_time=start_time,
+                        end_time=end_time,
+                        content_type=ContentType(segment['content_type']),
+                        content=str(segment['content']),
+                        metadata=segment.get('metadata', {}),
+                        confidence=confidence
+                    )
+                    video_segments.append(video_segment)
+                except Exception as e:
+                    print(f"⚠️ Error processing segment: {e}")
+                    continue
+            
+            if not video_segments:
+                print(f"❌ No valid segments could be loaded for video {video_id}")
+                return False
             
             # Create new index
             print(f"🔄 Creating new index for video {video_id}...")
@@ -875,17 +1316,22 @@ class VideoRAGProcessor:
             try:
                 task.status = "processing"
                 if task.task_type == "transcript":
-                    task.result = await self._process_transcript_task(task.video_id, quality)
+                    segments = await self._process_transcript_task(task.video_id, quality)
+                    task.result = segments if segments else []
                 elif task.task_type == "visual":
-                    task.result = await self._process_visual_task(task.video_id, quality)
+                    segments = await self._process_visual_task(task.video_id, quality)
+                    task.result = segments if segments else []
                 elif task.task_type == "metadata":
-                    task.result = await self._process_metadata_task(task.video_id)
+                    segment = await self._process_metadata_task(task.video_id)
+                    task.result = segment if segment else None
                 task.status = "completed"
                 task.progress = 1.0
             except Exception as e:
+                print(f"❌ Task {task.task_type} failed: {e}")
                 task.status = "failed"
                 task.error = str(e)
-                raise
+                task.result = [] if task.task_type in ["transcript", "visual"] else None
+                # Don't raise to allow other tasks to continue
 
     async def _process_video_sequential(self, video_id: str, quality: str, include_frames: bool, max_duration: int):
         """Process video sequentially"""
@@ -932,7 +1378,15 @@ class VideoRAGProcessor:
             if not video_path.exists():
                 raise ValueError("Video file not found")
 
-            frame_paths = await self._extract_frames_for_analysis(str(video_path), quality)
+            # Convert quality to number of frames
+            num_frames = {
+                'high': 20,
+                'medium': 15,
+                'low': 10,
+                'auto': 15
+            }.get(quality, 15)
+
+            frame_paths = await self._extract_frames_for_analysis(str(video_path), num_frames)
             if not frame_paths:
                 return []
 
@@ -940,15 +1394,21 @@ class VideoRAGProcessor:
             return self._create_visual_segments(frame_descriptions)
         except Exception as e:
             print(f"❌ Visual processing failed: {e}")
-            raise
+            return []  # Return empty list instead of raising to allow other tasks to continue
 
     async def _process_metadata_task(self, video_id: str) -> VideoSegment:
         """Process video metadata"""
         try:
             video_info = await self.get_video_info(video_id)
-            if not video_info:
+            if not video_info or 'video_info' not in video_info:
                 raise ValueError("Video info not found")
-            return self._create_metadata_segment(video_info)
+            
+            info = video_info['video_info']
+            duration = float(info.get('duration', 0))
+            if not duration:
+                raise ValueError("Video duration not found")
+            
+            return self._create_metadata_segment(info)
         except Exception as e:
             print(f"❌ Metadata processing failed: {e}")
             raise
@@ -969,15 +1429,26 @@ class VideoRAGProcessor:
             
             time_ranges.append(current_range)
 
+            # Get existing metadata
+            existing_metadata = await self.cache.get_video_metadata(video_id) or {}
+            
             # Preload each range
             for i, range_data in enumerate(time_ranges):
                 try:
-                    # Store segments in cache
-                    await self.cache.set_video_segments(
-                        video_id,
-                        range_data["start"],
-                        [s.to_dict() for s in range_data["segments"]]
-                    )
+                    # Update metadata with new segments
+                    updated_metadata = {
+                        **existing_metadata,
+                        "segments": [s.to_dict() for s in range_data["segments"]],
+                        "last_updated": datetime.now().isoformat(),
+                        "preload_progress": {
+                            "current": i + 1,
+                            "total": len(time_ranges),
+                            "timestamp": range_data["start"]
+                        }
+                    }
+                    
+                    # Store in cache
+                    await self.cache.set_video_metadata(video_id, updated_metadata)
                     
                     # Update progress
                     progress = (i + 1) / len(time_ranges)
@@ -996,15 +1467,86 @@ class VideoRAGProcessor:
             print(f"❌ Segment preloading failed: {e}")
 
     async def _save_metadata(self, video_id: str, metadata: Dict[str, Any]):
-        """Save video metadata to storage and cache"""
+        """Save video metadata to storage and cache with validation"""
         try:
-            # Save to file
-            metadata_file = self.storage_path / f"{video_id}_metadata.json"
-            with open(metadata_file, 'w') as f:
-                json.dump(metadata, f, indent=2)
+            # Create a copy of metadata to avoid modifying the original
+            metadata_copy = metadata.copy()
             
-            # Cache metadata
-            await self.cache.set_video_metadata(video_id, metadata)
+            # Convert VideoSection objects to dictionaries
+            if 'sections' in metadata_copy:
+                metadata_copy['sections'] = [
+                    s.to_dict() if hasattr(s, 'to_dict') else s 
+                    for s in metadata_copy['sections']
+                ]
+            
+            # Convert VideoSegment objects to dictionaries
+            if 'segments' in metadata_copy:
+                metadata_copy['segments'] = [
+                    s.to_dict() if hasattr(s, 'to_dict') else s 
+                    for s in metadata_copy['segments']
+                ]
+            
+            # Ensure all values are JSON serializable
+            def make_serializable(obj):
+                if isinstance(obj, (str, int, float, bool, type(None))):
+                    return obj
+                elif isinstance(obj, dict):
+                    return {k: make_serializable(v) for k, v in obj.items()}
+                elif isinstance(obj, (list, tuple)):
+                    return [make_serializable(item) for item in obj]
+                elif hasattr(obj, 'to_dict'):
+                    return obj.to_dict()
+                else:
+                    return str(obj)
+            
+            metadata_copy = make_serializable(metadata_copy)
+            
+            # Validate metadata structure
+            if not isinstance(metadata_copy, dict):
+                raise ValueError("Metadata must be a dictionary")
+            
+            required_fields = ['video_id', 'youtube_url', 'video_info']
+            if not all(field in metadata_copy for field in required_fields):
+                raise ValueError(f"Missing required fields: {required_fields}")
+            
+            # Validate video_info
+            video_info = metadata_copy.get('video_info', {})
+            if not isinstance(video_info, dict):
+                raise ValueError("video_info must be a dictionary")
+            
+            # Ensure numeric fields are proper types
+            if 'duration' in video_info:
+                try:
+                    video_info['duration'] = float(video_info['duration'])
+                except (ValueError, TypeError):
+                    raise ValueError("Invalid duration value")
+            
+            # Save to file with atomic write
+            metadata_file = self.storage_path / f"{video_id}_metadata.json"
+            temp_file = metadata_file.with_suffix('.tmp')
+            
+            try:
+                # Write to temporary file first
+                with open(temp_file, 'w') as f:
+                    json.dump(metadata_copy, f, indent=2, ensure_ascii=False)
+                
+                # Validate the written JSON
+                with open(temp_file, 'r') as f:
+                    json.load(f)  # This will raise if JSON is invalid
+                
+                # If validation passes, rename temp file to actual file
+                temp_file.replace(metadata_file)
+                print(f"✅ Metadata saved for video {video_id}")
+                
+                # Cache metadata
+                await self.cache.set_video_metadata(video_id, metadata_copy)
+                
+            except Exception as e:
+                # Clean up temp file if something goes wrong
+                if temp_file.exists():
+                    temp_file.unlink()
+                raise ValueError(f"Failed to save metadata: {e}")
+            
         except Exception as e:
             print(f"❌ Failed to save metadata: {e}")
             raise

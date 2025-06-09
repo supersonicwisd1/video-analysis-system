@@ -3,6 +3,17 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
+class VideoSection(BaseModel):
+    """Video section with timestamp and content"""
+    id: str = Field(..., description="Unique section ID")
+    title: str = Field(..., description="Section title")
+    start_time: float = Field(..., description="Start time in seconds")
+    end_time: float = Field(..., description="End time in seconds")
+    description: Optional[str] = Field(None, description="Section description")
+    type: str = Field("auto", description="Section type (auto, manual, youtube)")
+    confidence: float = Field(1.0, description="Confidence score for auto-generated sections")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional section metadata")
+
 class VideoSegment(BaseModel):
     """Video segment with timestamp and content"""
     start_time: float = Field(..., description="Start time in seconds")
@@ -20,8 +31,8 @@ class VideoMetadata(BaseModel):
     processed_at: datetime = Field(..., description="Processing timestamp")
     status: str = Field(..., description="Processing status")
     quality: str = Field("auto", description="Video quality setting")
-    sections: List[Dict[str, Any]] = Field(default_factory=list, description="Video sections")
-    segments: List[Dict[str, Any]] = Field(default_factory=list, description="Video segments")
+    sections: List[VideoSection] = Field(default_factory=list, description="Video sections")
+    segments: List[VideoSegment] = Field(default_factory=list, description="Video segments")
     frame_count: Optional[int] = Field(None, description="Number of frames extracted")
     error: Optional[str] = Field(None, description="Processing error if any")
 

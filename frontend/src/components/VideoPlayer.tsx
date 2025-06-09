@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { VideoProcessingService } from '../services/videoProcessingService';
 import { VideoApi } from '../services/videoApi';
+import { VideoSections } from './VideoSections';
+import { VideoSection } from '../types/api';
+import { Clock } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -27,10 +30,30 @@ interface VideoPlayerProps {
   autoPlay?: boolean;
   startTime?: number;
   className?: string;
+  sections?: VideoSection[];
+  onSectionUpdate?: (section: VideoSection) => Promise<void>;
+  onSectionDelete?: (sectionId: string) => Promise<void>;
+  onSectionCreate?: (section: Omit<VideoSection, 'id'>) => Promise<void>;
+  isEditing?: boolean;
 }
 
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
-  ({ videoId, onTimeUpdate, onStateChange, onQualityChange, onError, initialQuality = 'auto', autoPlay = false, startTime = 0, className }, ref) => {
+  ({ 
+    videoId, 
+    onTimeUpdate, 
+    onStateChange, 
+    onQualityChange, 
+    onError, 
+    initialQuality = 'auto', 
+    autoPlay = false, 
+    startTime = 0, 
+    className,
+    sections = [],
+    onSectionUpdate,
+    onSectionDelete,
+    onSectionCreate,
+    isEditing = false
+  }, ref) => {
     const playerRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -40,6 +63,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     const [isContainerMounted, setIsContainerMounted] = useState(false);
     const processingService = useRef(VideoProcessingService.getInstance());
     const playerContainerId = useRef(`youtube-player-${Math.random().toString(36).substr(2, 9)}`);
+    const [showSections, setShowSections] = useState(true);
 
     // Log component mount and props
     useEffect(() => {
@@ -361,11 +385,42 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             <div className="text-red-500">Error: {initError}</div>
           </div>
         )}
-        <div 
-          id={playerContainerId.current}
-          className="w-full h-full"
-          data-testid="youtube-player-container"
-        />
+        <div className="relative w-full h-full">
+          <div 
+            id={playerContainerId.current}
+            className="w-full h-full"
+            data-testid="youtube-player-container"
+          />
+
+          {showSections && sections.length > 0 && (
+            <div className="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out z-20">
+              <VideoSections
+                videoId={videoId}
+                sections={sections}
+                currentTime={playerRef.current?.getCurrentTime() || 0}
+                onSeek={(timestamp) => {
+                  if (playerRef.current && isPlayerReady) {
+                    playerRef.current.seekTo(timestamp, true);
+                  }
+                }}
+                onSectionUpdate={onSectionUpdate}
+                onSectionDelete={onSectionDelete}
+                onSectionCreate={onSectionCreate}
+                isEditing={isEditing}
+              />
+            </div>
+          )}
+
+          {sections.length > 0 && (
+            <button
+              onClick={() => setShowSections(!showSections)}
+              className="absolute right-4 top-4 z-30 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={showSections ? "Hide sections" : "Show sections"}
+            >
+              <Clock className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            </button>
+          )}
+        </div>
       </div>
     );
   }
