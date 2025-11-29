@@ -420,3 +420,68 @@ async def delete_video_section(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/cache/{video_id}", response_model=Dict[str, Any])
+async def clear_video_cache(
+    video_id: str,
+    processor: VideoRAGProcessor = Depends(get_video_processor),
+    cache: VideoCache = Depends(get_cache)
+):
+    """Clear cache for a specific video"""
+    try:
+        # Clear Redis cache
+        await cache.clear_video_cache(video_id)
+        
+        # Clear ChromaDB index if it exists
+        if processor.chroma_client:
+            try:
+                processor.chroma_client.delete_collection(f"video_{video_id}")
+            except:
+                pass
+        
+        # Remove from active indices
+        if video_id in processor.active_indices:
+            del processor.active_indices[video_id]
+        
+        return {
+            "status": "success",
+            "message": f"Cache cleared for video {video_id}",
+            "video_id": video_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/cache", response_model=Dict[str, Any])
+async def clear_all_cache(
+    processor: VideoRAGProcessor = Depends(get_video_processor),
+    cache: VideoCache = Depends(get_cache)
+):
+    """Clear all video cache"""
+    try:
+        # Clear all ChromaDB collections
+        if processor.chroma_client:
+            for collection in processor.chroma_client.list_collections():
+                if collection.name.startswith("video_"):
+                    try:
+                        processor.chroma_client.delete_collection(collection.name)
+                    except:
+                        pass
+        
+        # Clear all active indices
+        processor.active_indices.clear()
+        
+        # Clear Redis cache for all videos
+        # Get list of processed videos
+        videos = await processor.list_processed_videos()
+        for video in videos:
+            video_id = video.get("video_id")
+            if video_id:
+                await cache.clear_video_cache(video_id)
+        
+        return {
+            "status": "success",
+            "message": "All video cache cleared",
+            "videos_cleared": len(videos)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

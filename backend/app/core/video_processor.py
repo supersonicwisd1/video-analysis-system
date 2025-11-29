@@ -1047,42 +1047,116 @@ class VideoRAGProcessor:
     async def _download_video_for_frames(self, youtube_url: str, quality: str = 'auto', max_duration: int = 300) -> Optional[Dict]:
         """Download video with quality settings"""
         settings = self.quality_settings[quality]
+        
+        # Format selection with specific format IDs as fallback
+        format_options = [
+            # Try specific format IDs first (these are known to work)
+            '232+233',  # 1280x720 + audio
+            '231+233',  # 854x480 + audio
+            '230+233',  # 640x360 + audio
+            # Then try HLS formats
+            f'bestvideo[height<={settings["height"]}][protocol=m3u8]+bestaudio[protocol=m3u8]/best[height<={settings["height"]}][protocol=m3u8]/best[protocol=m3u8]',
+            # Fallback to regular formats
+            f'bestvideo[height<={settings["height"]}]+bestaudio/best[height<={settings["height"]}]/best',
+            # Last resort: any format
+            'best'
+        ]
+        
         ydl_opts = {
-            'format': f'best[height<={settings["height"]}]',
+            'format': format_options[0],  # Start with best quality option
             'outtmpl': str(self.storage_path / '%(id)s.%(ext)s'),
             'noplaylist': True,
             'writesubtitles': True,
             'writeautomaticsub': True,
             'subtitleslangs': ['en'],
+            'ignoreerrors': True,  # Continue on download errors
+            'no_warnings': False,  # Show warnings for debugging
+            'quiet': False,  # Show progress
+            'verbose': True,  # Show detailed output
+            'format_sort': ['res', 'ext:mp4:m4a', 'size', 'br', 'asr', 'proto'],  # Sort formats by quality
+            'merge_output_format': 'mp4',  # Force merge to mp4
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',  # Convert to mp4 if needed
+            }],
+            'hls_prefer_native': True,  # Use native HLS downloader
+            'hls_split_discontinuity': True,  # Handle HLS discontinuities
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web'],  # Try different clients
+                    'player_skip': ['webpage', 'configs'],  # Skip some player configs
+                }
+            },
+            'format_selection': 'prefer_free',  # Prefer formats without DRM
+            'allow_unplayable_formats': False,  # Skip unplayable formats
+            'retries': 3,  # Retry failed downloads
+            'fragment_retries': 3,  # Retry failed fragments
+            'skip_unavailable_fragments': True,  # Skip unavailable fragments
+            'keep_fragments': False,  # Don't keep fragments after download
+            'concurrent_fragment_downloads': 3  # Download fragments concurrently
         }
         
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(youtube_url, download=True)
-                
-                # Check duration
-                duration = float(info.get('duration', 0))
-                if duration > max_duration:
-                    print(f"⚠️ Video duration ({duration}s) exceeds limit ({max_duration}s)")
+                # First try to get video info without downloading
+                try:
+                    print(f"🔍 Getting video info for {youtube_url}")
+                    info = ydl.extract_info(youtube_url, download=False)
+                    if not info:
+                        raise ValueError("Could not extract video info")
+                    
+                    # Check duration
+                    duration = float(info.get('duration', 0))
+                    if duration > max_duration:
+                        print(f"⚠️ Video duration ({duration}s) exceeds limit ({max_duration}s)")
+                        return None
+                    
+                    # Try each format option until one works
+                    for format_option in format_options:
+                        try:
+                            print(f"🔄 Trying format: {format_option}")
+                            ydl_opts['format'] = format_option
+                            with yt_dlp.YoutubeDL(ydl_opts) as ydl_retry:
+                                info = ydl_retry.extract_info(youtube_url, download=True)
+                                if info:
+                                    print(f"✅ Successfully downloaded with format: {format_option}")
+                                    break
+                        except Exception as e:
+                            print(f"⚠️ Format {format_option} failed: {e}")
+                            continue
+                    
+                    if not info:
+                        raise ValueError("No suitable format found")
+                    
+                    video_path = ydl.prepare_filename(info)
+                    if not video_path or not os.path.exists(video_path):
+                        raise ValueError("Video file not found after download")
+                    
+                    print(f"✅ Video downloaded successfully: {video_path}")
+                    return {
+                        'video_path': video_path,
+                        'title': info.get('title', 'Unknown'),
+                        'duration': duration,
+                        'quality': quality,
+                        'height': settings['height'],
+                        'fps': settings['fps'],
+                        'video_id': info.get('id'),
+                        'upload_date': info.get('upload_date'),
+                        'channel': info.get('channel'),
+                        'view_count': info.get('view_count'),
+                        'like_count': info.get('like_count'),
+                        'description': info.get('description'),
+                        'thumbnail': info.get('thumbnail'),
+                        'has_subtitles': bool(info.get('subtitles') or info.get('automatic_captions')),
+                        'format': info.get('format'),
+                        'format_id': info.get('format_id'),
+                        'ext': info.get('ext'),
+                        'protocol': info.get('protocol', 'unknown')
+                    }
+                except Exception as e:
+                    print(f"❌ Video info extraction failed: {e}")
                     return None
                 
-                video_path = ydl.prepare_filename(info)
-                return {
-                    'video_path': video_path,
-                    'title': info.get('title', 'Unknown'),
-                    'duration': duration,
-                    'quality': quality,
-                    'height': settings['height'],
-                    'fps': settings['fps'],
-                    'video_id': info.get('id'),
-                    'upload_date': info.get('upload_date'),
-                    'channel': info.get('channel'),
-                    'view_count': info.get('view_count'),
-                    'like_count': info.get('like_count'),
-                    'description': info.get('description'),
-                    'thumbnail': info.get('thumbnail'),
-                    'has_subtitles': bool(info.get('subtitles') or info.get('automatic_captions'))
-                }
         except Exception as e:
             print(f"❌ Video download failed: {e}")
             return None
